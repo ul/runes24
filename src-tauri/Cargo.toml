@@ -1,0 +1,19 @@
+[package]
+name = "runes24"
+version = "1.0.0"
+description = "Runes 24"
+authors = [ "Ruslan Prakapchuk <fer.obbee@gmail.com>" ]
+license = "Apache-2.0 OR MIT"
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "1.0.0-beta.4" }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = [ "derive" ] }
+tauri = { git = "https://github.com/tauri-apps/tauri", branch = "next", features = ["api-all"] }
+
+[features]
+default = [ "custom-protocol" ]
+custom-protocol = [ "tauri/custom-protocol" ]
