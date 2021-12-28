@@ -1,33 +1,41 @@
-import React, { useState } from "react";
+import React, { useEffect } from "react";
+import CssBaseline from "@mui/material/CssBaseline";
+import DateAdapter from "@mui/lab/AdapterDayjs";
+import LocalizationProvider from "@mui/lab/LocalizationProvider";
 import { invoke } from "@tauri-apps/api/tauri";
+import { Provider, useAtom } from "jotai";
+import { persistentState } from "./state";
+import { TopNavigation } from "./TopNavigation";
+import { Router } from "./Router";
+import Box from "@mui/material/Box";
 
-function App() {
-  const [msgFromRust, setMsgFromRust] = useState("");
-  const [inputValue, setInputValue] = useState("");
-
-  const handleHelloWorld = async () => {
-    try {
-      const response = await invoke("hello_world_test", {
-        event: inputValue || "nope",
-      });
-      setMsgFromRust(`${response}`);
-      console.log("response ", response);
-    } catch (error) {
-      console.log("error ", error);
-    }
-  };
+export function App() {
+  const [, setPersistentState] = useAtom(persistentState);
+  useEffect(() => {
+    (async () => {
+      const initialState = JSON.parse(await invoke("get_initial_state", {}));
+      setPersistentState(initialState);
+    })();
+  }, []);
 
   return (
-    <div>
-      <input
-        value={inputValue}
-        placeholder="input for rust"
-        onChange={(e) => setInputValue(e.target.value)}
-      />
-      <button onClick={handleHelloWorld}>call rust</button>
-      {!!msgFromRust && <p>response message: {msgFromRust}</p>}
-    </div>
+    <Provider>
+      <LocalizationProvider dateAdapter={DateAdapter}>
+        <CssBaseline />
+        <Box sx={{ display: "flex", flexDirection: "column", flex: 1 }}>
+          <TopNavigation />
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              flex: 1,
+              mt: 1,
+            }}
+          >
+            <Router />
+          </Box>
+        </Box>
+      </LocalizationProvider>
+    </Provider>
   );
 }
-
-export default App;
