@@ -1,8 +1,19 @@
+@font-face {
+  font-family: "futhark";
+  src: url("./font/futhark.eot");
+  src: url("./font/futhark.eot?#iefix") format("embedded-opentype"),
+    url("./font/futhark.ttf") format("truetype"),
+    url("./font/futhark.svg#futhark") format("svg"),
+    url("./font/futhark.woff") format("woff");
+  font-weight: normal;
+  font-style: normal;
+}
+
 body {
   background-color: #fff;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-height: 100vh;
 }
 
 #app {
@@ -10,3 +21,79 @@ body {
   flex-direction: column;
   flex-grow: 1;
 }
+
+.rune {
+  font-family: "futhark";
+  text-anchor: middle;
+  /*alignment-baseline: central;*/
+}
+
+svg,
+.canvas,
+.no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+}
+
+/* SVG */
+.star {
+  stroke: #473928;
+  stroke-linejoin: round;
+  stroke-width: 0.5px;
+  fill: #c1b08b;
+}
+
+.circle {
+  stroke: #a7453f;
+}
+
+.inner-circle {
+  fill: #fef7ed;
+}
+
+.middle-circle {
+  fill: #efead3;
+}
+
+.position-rune {
+  fill: #c00;
+  cursor: default;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  font-size: 10px;
+  /*
+      stroke: #000;
+      stroke-opacity: 0.1;
+      stroke-width: 5;
+    */
+}
+
+.meaning-rune {
+  fill: #473928;
+  font-size: 16px;
+  /*stroke: #c1b08b;
+    stroke-width: 2px;
+    stroke-opacity: 0.75;
+    stroke-linejoin: bevel;
+    stroke-linecap: round;
+    font-weight: bold;*/
+  cursor: pointer;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+}
+
+.rune-link {
+  stroke-width: 0;
+  /*stroke: #000000;*/
+  stroke-opacity: 0.25;
+  fill: #442222;
+  fill-opacity: 0.25;
+}
+
+.rune-link:hover {
+  fill-opacity: 1;
+}
+/* END SVG */

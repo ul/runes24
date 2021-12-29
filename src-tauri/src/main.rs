@@ -12,7 +12,7 @@ fn get_state_path() -> PathBuf {
     let mut state_path = dirs::home_dir().unwrap();
     state_path.push(".runes24");
     create_dir_all(&state_path).unwrap();
-    state_path.push("state");
+    state_path.push("state.json");
     state_path
 }
 

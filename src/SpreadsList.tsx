@@ -1,16 +1,19 @@
 import React from "react";
 import { SpreadsFilter } from "./SpreadsFilter";
-import Box from "@mui/material/Box";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { useAtom } from "jotai";
-import { filteredSpreads } from "./state";
+import { useUpdateAtom } from "jotai/utils";
+import { filteredSpreads, route, Screen } from "./state";
+import dayjs from "dayjs";
+import Stack from "@mui/material/Stack";
 
 const columns: GridColDef[] = [
   {
     field: "date",
     headerName: "Date",
     type: "date",
-    width: 100,
+    width: 110,
+    valueFormatter: ({ value }) => dayjs(value).format("DD/MM/YY"),
   },
   {
     field: "topic",
@@ -26,14 +29,18 @@ const columns: GridColDef[] = [
 
 export function SpreadsList() {
   const [rows] = useAtom(filteredSpreads);
+  const setRoute = useUpdateAtom(route);
   return (
-    <>
-      <Box sx={{ p: 1, display: "flex" }}>
-        <SpreadsFilter />
-      </Box>
-      <Box sx={{ p: 1, flex: 1 }}>
-        <DataGrid rows={rows} columns={columns} autoPageSize />
-      </Box>
-    </>
+    <Stack spacing={1} flex={1} p={1}>
+      <SpreadsFilter />
+      <DataGrid
+        rows={rows}
+        columns={columns}
+        autoPageSize
+        onRowClick={({ id }) => {
+          setRoute({ screen: Screen.EditSpread, spreadId: id });
+        }}
+      />
+    </Stack>
   );
 }

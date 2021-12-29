@@ -6,29 +6,36 @@ import IconButton from "@mui/material/IconButton";
 import AddIcon from "@mui/icons-material/Add";
 import ListIcon from "@mui/icons-material/List";
 import { useAtom } from "jotai";
-import { Route, route } from "./state";
+import { useUpdateAtom } from "jotai/utils";
+import { Screen, route, createSpread } from "./state";
+import { nanoid } from "nanoid";
 
 export function TopNavigation() {
-  const [, setRoute] = useAtom(route);
+  const [currentRoute, setRoute] = useAtom(route);
+  const doCreateSpread = useUpdateAtom(createSpread);
   return (
     <AppBar position="static">
       <Toolbar variant="dense">
+        {currentRoute.screen !== Screen.SpreadsList ? (
+          <IconButton
+            edge="start"
+            color="inherit"
+            sx={{ mr: 2 }}
+            onClick={() => {
+              setRoute({ screen: Screen.SpreadsList });
+            }}
+          >
+            <ListIcon />
+          </IconButton>
+        ) : null}
         <IconButton
           edge="start"
           color="inherit"
           sx={{ mr: 2 }}
           onClick={() => {
-            setRoute(Route.SpreadsList);
-          }}
-        >
-          <ListIcon />
-        </IconButton>
-        <IconButton
-          edge="start"
-          color="inherit"
-          sx={{ mr: 2 }}
-          onClick={() => {
-            setRoute(Route.CreateSpread);
+            const id = nanoid();
+            doCreateSpread(id);
+            setRoute({ screen: Screen.EditSpread, spreadId: id });
           }}
         >
           <AddIcon />
@@ -40,7 +47,7 @@ export function TopNavigation() {
           component="div"
           sx={{ flex: 1 }}
         >
-          24 Runes
+          Runic Circle
         </Typography>
       </Toolbar>
     </AppBar>
