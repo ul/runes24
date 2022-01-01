@@ -177,7 +177,7 @@ export const currentSpread = atom<Spread | null, Spread>(
   (get) => {
     const { spreads } = get(persistentState);
     const id = get(currentSpreadId);
-    return spreads[id];
+    return id ? spreads[id] : null;
   },
   (get, set, spread) => {
     const state = get(persistentState);
@@ -192,7 +192,7 @@ export const readings = atom<
   Record<string, Record<Rune, any>>,
   Record<string, Record<Rune, any>>
 >(
-  (get) => get(currentSpread)?.readings,
+  (get) => get(currentSpread)?.readings || {},
   (get, set, readings) => {
     const spread = get(currentSpread);
     if (!spread) return;
@@ -261,7 +261,7 @@ export const pinnedChains = atom<Chain[]>((get) => {
     const runes = slots.map((s) => s.position);
     const positions = new Set(runes);
     const pin =
-      (positions.has(tempPin) && tempPin) ||
+      (tempPin !== "" && positions.has(tempPin) && tempPin) ||
       spread?.chainPins.find((p) => positions.has(p)) ||
       runes[0];
     const offset = pin ? slots.findIndex((s) => s.position === pin) : 0;

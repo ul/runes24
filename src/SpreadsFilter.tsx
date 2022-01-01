@@ -6,7 +6,7 @@ import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import TextField from "@mui/material/TextField";
-import { filters, Futhark, querents, themes } from "./state";
+import { filters, Futhark, querents, Rune, themes } from "./state";
 import { useAtom } from "jotai";
 import Stack from "@mui/material/Stack";
 
@@ -42,8 +42,8 @@ export function SpreadsFilter() {
         inputFormat="DD/MM/YY"
         mask="__/__/__"
         value={f.fromDate}
-        onChange={(date: Date) => {
-          setFilters({ ...f, fromDate: date.valueOf() });
+        onChange={(date) => {
+          setFilters({ ...f, fromDate: date?.valueOf() ?? null });
         }}
         renderInput={(params) => (
           <TextField variant="standard" sx={{ flex: 2 }} {...params} />
@@ -54,8 +54,8 @@ export function SpreadsFilter() {
         inputFormat="DD/MM/YY"
         mask="__/__/__"
         value={f.toDate}
-        onChange={(date: Date) => {
-          setFilters({ ...f, toDate: date.valueOf() });
+        onChange={(date) => {
+          setFilters({ ...f, toDate: date?.valueOf() ?? null });
         }}
         renderInput={(params) => (
           <TextField variant="standard" sx={{ flex: 2 }} {...params} />
@@ -87,7 +87,7 @@ export function SpreadsFilter() {
           labelId="position-select-label"
           label="Position"
           onChange={(e) => {
-            setFilters({ ...f, position: e.target.value });
+            setFilters({ ...f, position: e.target.value as Rune | null });
           }}
         >
           <MenuItem value="">None</MenuItem>
@@ -105,7 +105,7 @@ export function SpreadsFilter() {
           labelId="meaning-select-label"
           label="Meaning"
           onChange={(e) => {
-            setFilters({ ...f, meaning: e.target.value });
+            setFilters({ ...f, meaning: e.target.value as Rune | null });
           }}
         >
           <MenuItem value="">None</MenuItem>

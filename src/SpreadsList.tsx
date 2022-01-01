@@ -23,7 +23,7 @@ const columns: GridColDef[] = [
     headerName: "Date",
     type: "date",
     width: 110,
-    valueFormatter: ({ value }) => dayjs(value).format("DD/MM/YY"),
+    valueFormatter: ({ value }) => dayjs(value as number).format("DD/MM/YY"),
   },
 ];
 
@@ -38,7 +38,7 @@ export function SpreadsList() {
         columns={columns}
         autoPageSize
         onRowClick={({ id }) => {
-          setRoute({ screen: Screen.EditSpread, spreadId: id });
+          setRoute({ screen: Screen.EditSpread, spreadId: id as string });
         }}
       />
     </Stack>

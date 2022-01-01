@@ -1,4 +1,3 @@
-import Stack from "@mui/material/Stack";
 import React from "react";
 
 export function Footer() {
@@ -8,19 +7,13 @@ export function Footer() {
       <div>
         © 2013<span>–</span>2021
         <br />
-        <span>
-          <a href="http://telemach.livejournal.com">KaRus</a>
-          &nbsp;/&nbsp;приложение
-          <br />
-        </span>
-        <span>
-          <a href="http://restlos.livejournal.com/">Lacerta</a>
-          &nbsp;/&nbsp;рунический шрифт
-          <br />
-        </span>
+        KaRus&nbsp;/&nbsp;приложение
+        <br />
+        Lacerta&nbsp;/&nbsp;рунический шрифт
+        <br />
         Сделано с
         <span style={{ padding: "0px 0.25rem", color: "#F44336" }}>♥</span>
-        в&nbsp;<a href="/img/valley.jpg">Долине</a> и Сиднее
+        в&nbsp;Долине и Сиднее
       </div>
     </footer>
   );
