@@ -146,12 +146,12 @@ function BubbleMenu() {
       containerClass="text-editor-toolbar"
       items={floatingToolbarItems}
       positioner="selection"
-      placement="bottom"
+      placement="right"
     />
   );
 }
 
-export function TextEditor({ content, onChange }) {
+export function TextEditor({ content, onChange, className }) {
   const { manager, state, setState } = useRemirror({
     extensions: () => [
       new BoldExtension(),
@@ -177,7 +177,7 @@ export function TextEditor({ content, onChange }) {
   ];
 
   return (
-    <div className="remirror-theme text-editor">
+    <div className={`remirror-theme text-editor ${className ?? ""}`}>
       <Remirror
         manager={manager}
         initialContent={state}

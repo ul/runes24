@@ -5,7 +5,6 @@ import { useAtom } from "jotai";
 import Stack from "@mui/material/Stack";
 import { Token } from "./Token";
 import { PositionCard } from "./PositionCard";
-import Divider from "@mui/material/Divider";
 
 function reorder<T>(list: T[], startIndex: number, endIndex: number): T[] {
   const result = Array.from(list);
@@ -52,7 +51,7 @@ export function DraggablePositionCards({
           <Stack
             {...provided.droppableProps}
             ref={provided.innerRef}
-            spacing={1}
+            spacing={2}
           >
             {orderedRunes.map((rune, index) => (
               <Fragment key={rune}>
@@ -69,7 +68,7 @@ export function DraggablePositionCards({
                     >
                       <Stack direction="row" spacing={1}>
                         <div {...provided.dragHandleProps}>
-                          <Token position={rune} />
+                          <Token position={rune} noColor />
                         </div>
                         <PositionCard position={rune} theme={theme} />
                       </Stack>

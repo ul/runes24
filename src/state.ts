@@ -168,6 +168,8 @@ export const querents = atom<Array<{ label: string }>>((get) => {
   ).map((label) => ({ label }));
 });
 
+export const byChains = atom<boolean>(false);
+
 export const currentSpreadId = atom<string | null>((get) => {
   let r = get(route);
   return r.screen === Screen.EditSpread ? r.spreadId : null;

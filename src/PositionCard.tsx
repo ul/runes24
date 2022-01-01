@@ -18,6 +18,7 @@ export function PositionCard({
   return (
     <Stack flexGrow={1}>
       <TextEditor
+        className="text-editor-theme-description"
         content={themeDesc[position]}
         onChange={(json: any) => {
           setDesc({

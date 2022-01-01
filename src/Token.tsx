@@ -6,9 +6,11 @@ import { currentSpread, Rune, runeColors } from "./state";
 export function Token({
   onClick,
   position,
+  noColor,
 }: {
   position: Rune;
   onClick?: () => void;
+  noColor?: boolean;
 }) {
   const [spread] = useAtom(currentSpread);
   const [colors] = useAtom(runeColors);
@@ -19,8 +21,9 @@ export function Token({
       className={`token rune${onClick ? " pointer" : ""}`}
       onClick={onClick}
       sx={{
-        backgroundColor: colors[position] || null,
+        backgroundColor: noColor ? null : colors[position] || null,
       }}
+      elevation={noColor ? 0 : 1}
     >
       <sup>{position}</sup>
       <span

@@ -4,10 +4,10 @@ import Switch from "@mui/material/Switch";
 import Stack from "@mui/material/Stack";
 import { useAtom } from "jotai";
 import { useUpdateAtom } from "jotai/utils";
-import React, { useState } from "react";
+import React from "react";
 import {
   currentChain,
-  currentSpread,
+  byChains,
   pinCurrentChain,
   pinnedChains,
   resetOrder,
@@ -30,6 +30,8 @@ function FutharkOrder() {
           setCurrentChain(runeToChain[rune] ?? -1);
         }}
       />
+      <Divider orientation="horizontal" flexItem sx={{ mt: 2, mb: 1 }} />
+      <DraggablePositionCards theme="AllRunes" />
     </Stack>
   );
 }
@@ -37,17 +39,23 @@ function FutharkOrder() {
 function Chains() {
   const [allChains] = useAtom(pinnedChains);
   const setCurrentChain = useUpdateAtom(currentChain);
+  const runeGroups = allChains.map((chain) => chain.map((s) => s.position));
   return (
     <Stack>
-      {allChains.map((chain, i) => (
+      {runeGroups.map((runes, i) => (
         <RunesOrder
           key={i}
-          runes={chain.map((s) => s.position)}
+          runes={runes}
           onClick={() => {
             setCurrentChain(i);
           }}
         />
       ))}
+      <Divider orientation="horizontal" flexItem sx={{ mt: 2, mb: 1 }} />
+      <DraggablePositionCards
+        theme="AllRunes"
+        runes={runeGroups.flatMap((x) => x)}
+      />
     </Stack>
   );
 }
@@ -90,7 +98,7 @@ function Chain() {
 }
 
 function FutharkControls() {
-  const [groupByChains, setGroupByChains] = useState(false);
+  const [groupByChains, setGroupByChains] = useAtom(byChains);
   const doResetOrder = useUpdateAtom(resetOrder);
   return (
     <>
@@ -118,13 +126,5 @@ function FutharkControls() {
 
 export function AllRunes() {
   const [chain] = useAtom(currentChain);
-  return chain < 0 ? (
-    <Stack>
-      <FutharkControls />
-      <Divider orientation="horizontal" flexItem sx={{ mt: 2, mb: 1 }} />
-      <DraggablePositionCards theme="AllRunes" />
-    </Stack>
-  ) : (
-    <Chain />
-  );
+  return chain < 0 ? <FutharkControls /> : <Chain />;
 }
