@@ -5,6 +5,7 @@ import { useAtom } from "jotai";
 import Stack from "@mui/material/Stack";
 import { Token } from "./Token";
 import { PositionCard } from "./PositionCard";
+import Divider from "@mui/material/Divider";
 
 function reorder<T>(list: T[], startIndex: number, endIndex: number): T[] {
   const result = Array.from(list);
@@ -13,10 +14,17 @@ function reorder<T>(list: T[], startIndex: number, endIndex: number): T[] {
   return result;
 }
 
-export function DraggablePositionCards({ theme }: { theme: string }) {
+export function DraggablePositionCards({
+  theme,
+  runes,
+}: {
+  theme: string;
+  runes?: Rune[];
+}) {
   const [spread, setSpread] = useAtom(currentSpread);
   const [themeSpecs] = useAtom(themes);
-  const runes =
+  const orderedRunes =
+    runes ||
     spread?.order[theme] ||
     themeSpecs.find((t) => t.name === theme)?.runes ||
     [];
@@ -28,37 +36,36 @@ export function DraggablePositionCards({ theme }: { theme: string }) {
         order: {
           ...spread.order,
           [theme]: reorder(
-            runes,
+            orderedRunes,
             result.source.index,
             result.destination.index
           ),
         },
       });
     },
-    [spread, setSpread, runes]
+    [spread, setSpread, orderedRunes]
   );
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <Droppable droppableId="droppable">
+      <Droppable droppableId="PositionCards">
         {(provided) => (
           <Stack
             {...provided.droppableProps}
             ref={provided.innerRef}
             spacing={1}
           >
-            {runes.map((rune, index) => (
+            {orderedRunes.map((rune, index) => (
               <Fragment key={rune}>
-                <Draggable draggableId={rune} index={index}>
-                  {(provided, snapshot) => (
+                <Draggable
+                  draggableId={rune}
+                  index={index}
+                  isDragDisabled={!!runes}
+                >
+                  {(provided) => (
                     <div
                       ref={provided.innerRef}
                       {...provided.draggableProps}
-                      style={
-                        provided.draggableProps.style /*getItemStyle(
-                        snapshot.isDragging,
-                        provided.draggableProps.style
-                      )*/
-                      }
+                      style={provided.draggableProps.style}
                     >
                       <Stack direction="row" spacing={1}>
                         <div {...provided.dragHandleProps}>
@@ -69,7 +76,6 @@ export function DraggablePositionCards({ theme }: { theme: string }) {
                     </div>
                   )}
                 </Draggable>
-                {/*<Divider orientation="horizontal" light />*/}
               </Fragment>
             ))}
             {provided.placeholder}

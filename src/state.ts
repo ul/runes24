@@ -188,6 +188,15 @@ export const currentSpread = atom<Spread | null, Spread>(
   }
 );
 
+export const resetOrder = atom<null, null>(null, (get, set) => {
+  const spread = get(currentSpread);
+  if (!spread) return;
+  set(currentSpread, {
+    ...spread,
+    order: { ...spread.order, AllRunes: [...Futhark] },
+  });
+});
+
 export const readings = atom<
   Record<string, Record<Rune, any>>,
   Record<string, Record<Rune, any>>

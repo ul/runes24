@@ -10,25 +10,22 @@ import {
   currentSpread,
   pinCurrentChain,
   pinnedChains,
+  resetOrder,
   Rune,
   runeChains,
   temporaryPin,
 } from "./state";
 import Divider from "@mui/material/Divider";
 import { RunesOrder } from "./RunesOrder";
-import { PositionCard } from "./PositionCard";
-import { Token } from "./Token";
 import { DraggablePositionCards } from "./DraggablePositionCards";
 
 function FutharkOrder() {
-  const [spread] = useAtom(currentSpread);
   const [runeToChain] = useAtom(runeChains);
   const setCurrentChain = useUpdateAtom(currentChain);
-  const runes = spread?.order.AllRunes || [];
   return (
     <Stack>
       <RunesOrder
-        runes={runes}
+        theme="AllRunes"
         onClick={(rune: Rune) => {
           setCurrentChain(runeToChain[rune] ?? -1);
         }}
@@ -63,7 +60,7 @@ function Chain() {
   const slots = allChains[chain];
   const runes = slots.map((s) => s.position);
   return (
-    <>
+    <Stack>
       <Stack
         direction="row"
         spacing={1}
@@ -86,38 +83,48 @@ function Chain() {
           setTempPin(rune);
         }}
       />
-      <Divider orientation="horizontal" flexItem sx={{ mt: 2, mb: 2 }} />
-      {runes.map((rune) => (
-        <Stack direction="row" spacing={1}>
-          <Token position={rune} />
-          <PositionCard key={rune} position={rune} theme="AllRunes" />
-        </Stack>
-      ))}
+      <Divider orientation="horizontal" flexItem sx={{ mt: 2, mb: 1 }} />
+      <DraggablePositionCards theme="AllRunes" runes={runes} />
+    </Stack>
+  );
+}
+
+function FutharkControls() {
+  const [groupByChains, setGroupByChains] = useState(false);
+  const doResetOrder = useUpdateAtom(resetOrder);
+  return (
+    <>
+      <Stack
+        direction="row"
+        spacing={1}
+        divider={<Divider orientation="vertical" flexItem />}
+        mb={1}
+      >
+        <FormControlLabel
+          control={
+            <Switch
+              checked={groupByChains}
+              onChange={(e) => setGroupByChains(e.target.checked)}
+            />
+          }
+          label="Chains"
+        />
+        <Button onClick={() => doResetOrder(null)}>Reset</Button>
+      </Stack>
+      {groupByChains ? <Chains /> : <FutharkOrder />}
     </>
   );
 }
 
 export function AllRunes() {
-  const [groupByChains, setGroupByChains] = useState(false);
   const [chain] = useAtom(currentChain);
-  const isSingleChain = chain >= 0;
-  return isSingleChain ? (
-    <Chain />
-  ) : (
+  return chain < 0 ? (
     <Stack>
-      <FormControlLabel
-        control={
-          <Switch
-            checked={groupByChains}
-            onChange={(e) => setGroupByChains(e.target.checked)}
-          />
-        }
-        label="Chains"
-        sx={{ mb: 1 }}
-      />
-      {groupByChains ? <Chains /> : <FutharkOrder />}
-      <Divider orientation="horizontal" flexItem sx={{ mt: 2, mb: 2 }} />
+      <FutharkControls />
+      <Divider orientation="horizontal" flexItem sx={{ mt: 2, mb: 1 }} />
       <DraggablePositionCards theme="AllRunes" />
     </Stack>
+  ) : (
+    <Chain />
   );
 }
