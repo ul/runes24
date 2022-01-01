@@ -16,20 +16,7 @@ export function TopNavigation() {
   return (
     <AppBar position="static">
       <Toolbar variant="dense">
-        {currentRoute.screen !== Screen.SpreadsList ? (
-          <IconButton
-            edge="start"
-            color="inherit"
-            sx={{ mr: 2 }}
-            onClick={() => {
-              setRoute({ screen: Screen.SpreadsList });
-            }}
-          >
-            <ListIcon />
-          </IconButton>
-        ) : null}
         <IconButton
-          edge="start"
           color="inherit"
           sx={{ mr: 2 }}
           onClick={() => {
@@ -49,6 +36,16 @@ export function TopNavigation() {
         >
           Runic Circle
         </Typography>
+        {currentRoute.screen !== Screen.SpreadsList ? (
+          <IconButton
+            color="inherit"
+            onClick={() => {
+              setRoute({ screen: Screen.SpreadsList });
+            }}
+          >
+            <ListIcon />
+          </IconButton>
+        ) : null}
       </Toolbar>
     </AppBar>
   );

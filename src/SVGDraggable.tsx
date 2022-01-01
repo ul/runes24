@@ -28,7 +28,7 @@ function location(e: MouseEvent): Point {
   return [e.clientX, e.clientY];
 }
 
-export function useSVGDraggable({ start, stop, xy }) {
+export function useSVGDraggable({ start, stop, xy }, deps) {
   const setXY = useUpdateAtom(xy);
   const node = useRef(null);
   const drag = useCallback(
@@ -45,14 +45,14 @@ export function useSVGDraggable({ start, stop, xy }) {
       window.removeEventListener("mouseup", mouseUp);
       stop();
     }
-  });
+  }, deps);
   const mouseDown = useCallback((e: MouseEvent) => {
     if (!isLeftButton(e)) return;
     start();
     drag(e);
     window.addEventListener("mousemove", drag);
     window.addEventListener("mouseup", mouseUp);
-  }, []);
+  }, deps);
   const ref = useCallback((newNode) => {
     if (newNode === node.current) return;
     if (node.current) {
@@ -62,6 +62,6 @@ export function useSVGDraggable({ start, stop, xy }) {
     if (node.current) {
       node.current.addEventListener("mousedown", mouseDown);
     }
-  }, []);
+  }, deps);
   return ref;
 }

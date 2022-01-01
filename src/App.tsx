@@ -6,6 +6,7 @@ import { Provider } from "jotai";
 import { TopNavigation } from "./TopNavigation";
 import { Router } from "./Router";
 import Stack from "@mui/material/Stack";
+import { Footer } from "./Footer";
 
 export function App() {
   return (
@@ -17,6 +18,7 @@ export function App() {
           <Stack mt={1} flex={1}>
             <Router />
           </Stack>
+          <Footer />
         </Stack>
       </LocalizationProvider>
     </Provider>

@@ -17,8 +17,8 @@ fn get_state_path() -> PathBuf {
 }
 
 #[tauri::command]
-fn get_initial_state() -> String {
-    read_to_string(get_state_path()).unwrap_or(String::from("{\"version\": 1}"))
+fn get_initial_state() -> Option<String> {
+    read_to_string(get_state_path()).ok()
 }
 
 #[tauri::command]

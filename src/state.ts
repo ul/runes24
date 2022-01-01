@@ -1,5 +1,6 @@
 import { atom } from "jotai";
 import { invoke } from "@tauri-apps/api/tauri";
+import defaultThemes from "./themes.json";
 
 export type Point = [number, number];
 
@@ -32,18 +33,34 @@ export const Futhark = [
 
 export type Rune = typeof Futhark[number];
 
+export type Slot = { position: Rune; meaning: Rune };
+export type Chain = Slot[];
+
 export interface Spread {
   id: string;
   date: number;
-  topic: string;
+  title: string;
   querent: string;
-  circle: Array<{ position: Rune; meaning: Rune }>;
+  circle: Chain;
   rx: Array<Rune>;
+  chainPins: Array<Rune>;
+  locked: boolean;
+  order: Record<string, Rune[]>;
+  readings: Record<string, Record<Rune, any>>;
 }
 
+export interface ThemeScheme {
+  name: string;
+  runes: Rune[];
+}
+
+// Keep it and all dependencies JSON-serializable,
+// no fancy stuff like Sets etc.
 export interface PersistentState {
   version: number;
   spreads: Record<string, Spread>;
+  themes: ThemeScheme[];
+  descriptions: Record<string, Record<Rune, any>>;
 }
 
 export enum Screen {
@@ -63,24 +80,29 @@ export interface EditSpread {
 export type Route = SpreadsList | EditSpread;
 
 export interface Filters {
-  topic: string;
+  title: string;
   fromDate: number | null;
   toDate: number | null;
   querent: string;
-  aspect: string;
+  theme: string;
   position: Rune | null;
   meaning: Rune | null;
 }
 
-const persistentStateRaw = atom<PersistentState>({
+const initialState: PersistentState = {
   version: 1,
   spreads: {},
-});
+  themes: defaultThemes as ThemeScheme[],
+  descriptions: {},
+};
+const persistentStateRaw = atom<PersistentState>(initialState);
 
 persistentStateRaw.onMount = (set) => {
   (async () => {
     const initialState = JSON.parse(await invoke("get_initial_state", {}));
-    set(initialState);
+    if (initialState) {
+      set(initialState);
+    }
   })();
 };
 
@@ -92,23 +114,59 @@ export const persistentState = atom<PersistentState, PersistentState>(
   }
 );
 
+export const descriptions = atom<
+  Record<string, Record<Rune, any>>,
+  Record<string, Record<Rune, any>>
+>(
+  (get) => get(persistentState).descriptions,
+  (get, set, descriptions) => {
+    const state = get(persistentState);
+    set(persistentState, { ...state, descriptions });
+  }
+);
+
 export const createSpread = atom<null, string>(null, (get, set, id) => {
   const state = get(persistentState);
-  const spreads = {
+  const spreads: Record<string, Spread> = {
     ...state.spreads,
     [id]: {
       id,
       date: Date.now(),
-      topic: "",
+      title: "",
       querent: "",
       circle: [],
       rx: [],
+      chainPins: [],
+      locked: false,
+      order: { AllRunes: [...Futhark] },
+      readings: {},
     },
   };
   set(persistentState, { ...state, spreads });
 });
 
+export const deleteSpread = atom<null, string>(null, (get, set, id) => {
+  const state = get(persistentState);
+  const { [id]: _, ...spreads } = state.spreads;
+  set(persistentState, { ...state, spreads });
+});
+
+export const themes = atom<ThemeScheme[], ThemeScheme[]>(
+  (get) => get(persistentState).themes,
+  (get, set, themes) => {
+    const state = get(persistentState);
+    set(persistentState, { ...state, themes });
+  }
+);
+
 export const route = atom<Route>({ screen: Screen.SpreadsList });
+
+export const querents = atom<Array<{ label: string }>>((get) => {
+  const state = get(persistentState);
+  return Array.from(
+    new Set(Object.values(state.spreads).map((s) => s.querent))
+  ).map((label) => ({ label }));
+});
 
 export const currentSpreadId = atom<string | null>((get) => {
   let r = get(route);
@@ -130,6 +188,119 @@ export const currentSpread = atom<Spread | null, Spread>(
   }
 );
 
+export const readings = atom<
+  Record<string, Record<Rune, any>>,
+  Record<string, Record<Rune, any>>
+>(
+  (get) => get(currentSpread)?.readings,
+  (get, set, readings) => {
+    const spread = get(currentSpread);
+    if (!spread) return;
+    set(currentSpread, { ...spread, readings });
+  }
+);
+
+export const straightenFreeRunes = atom<null, null>(null, (get, set) => {
+  const spread = get(currentSpread);
+  if (!spread) return;
+  const runesInCircle = new Set(spread.circle.map((s) => s.meaning));
+  set(currentSpread, {
+    ...spread,
+    rx: spread.rx.filter((rune) => runesInCircle.has(rune)),
+  });
+});
+
+export const pinCurrentChain = atom<null, Rune>(null, (get, set, newPin) => {
+  const chainIdx = get(currentChain);
+  if (chainIdx < 0) return;
+  const spread = get(currentSpread);
+  if (!spread) return;
+  const allChains = get(chains);
+  const chain = allChains[chainIdx];
+  const positions = new Set(chain.map((s) => s.position));
+  set(currentSpread, {
+    ...spread,
+    chainPins: [
+      ...spread.chainPins.filter((rune) => !positions.has(rune)),
+      newPin,
+    ],
+  });
+});
+
+export const chains = atom<Chain[]>((get) => {
+  const result: Chain[] = [];
+  const spread = get(currentSpread);
+  if (!spread) return result;
+  const visited = new Set<Rune>();
+  for (const rune of Futhark) {
+    let position = rune;
+    const chain = [];
+    while (!visited.has(position)) {
+      visited.add(position);
+      const slot = spread.circle.find((s) => s.position === position);
+      if (slot) {
+        chain.push(slot);
+        position = slot.meaning;
+      }
+    }
+    if (chain.length > 0) {
+      result.push(chain);
+    }
+  }
+  return result.sort((a, b) => b.length - a.length);
+});
+
+export const temporaryPin = atom<Rune | "">("");
+
+export const pinnedChains = atom<Chain[]>((get) => {
+  const spread = get(currentSpread);
+  const allChains = get(chains);
+  const tempPin = get(temporaryPin);
+  const result = [];
+  for (const slots of allChains) {
+    const runes = slots.map((s) => s.position);
+    const positions = new Set(runes);
+    const pin =
+      (positions.has(tempPin) && tempPin) ||
+      spread?.chainPins.find((p) => positions.has(p)) ||
+      runes[0];
+    const offset = pin ? slots.findIndex((s) => s.position === pin) : 0;
+    const pinnedChain = [];
+    for (let i = offset; i < offset + slots.length; i++) {
+      pinnedChain.push(slots[i % slots.length]);
+    }
+    result.push(pinnedChain);
+  }
+  return result;
+});
+
+export const currentChain = atom<number>(-1);
+
+export const runeColors = atom<Record<Rune, string>>((get) => {
+  const allChains = get(chains);
+  const n = allChains.length;
+  const result = {} as Record<Rune, string>;
+  allChains.forEach((chain, i) => {
+    const hue = Math.round((360 * i + 180) / n) % 360;
+    const chainColor = `hsla(${hue},100%,50%,0.25)`;
+    for (const { position } of chain) {
+      result[position] = chainColor;
+    }
+  });
+  return result;
+});
+
+export const runeChains = atom<Record<Rune, number>>((get) => {
+  const allChains = get(chains);
+  const result = {} as Record<Rune, number>;
+  allChains.forEach((chain, i) => {
+    for (const { position } of chain) {
+      result[position] = i;
+    }
+  });
+  return result;
+});
+
 export const reverseRune = atom<null, Rune>(null, (get, set, rune) => {
   const spread = get(currentSpread);
   if (spread) {
@@ -145,13 +316,18 @@ export const reverseRune = atom<null, Rune>(null, (get, set, rune) => {
 });
 
 export const filters = atom<Filters>({
-  topic: "",
+  title: "",
   fromDate: null,
   toDate: null,
   querent: "",
-  aspect: "",
+  theme: "",
   position: null,
   meaning: null,
+});
+
+const emptyDoc = JSON.stringify({
+  type: "doc",
+  content: [{ type: "paragraph" }],
 });
 
 export const filteredSpreads = atom<Spread[]>((get) => {
@@ -159,8 +335,8 @@ export const filteredSpreads = atom<Spread[]>((get) => {
   const f = get(filters);
   return Object.values(spreads).filter((s) => {
     if (
-      f.topic !== "" &&
-      !s.topic.toLowerCase().includes(f.topic.toLowerCase())
+      f.title !== "" &&
+      !s.title.toLowerCase().includes(f.title.toLowerCase())
     )
       return false;
     if (f.fromDate !== null && s.date < f.fromDate) return false;
@@ -170,7 +346,18 @@ export const filteredSpreads = atom<Spread[]>((get) => {
       !s.querent.toLowerCase().includes(f.querent.toLowerCase())
     )
       return false;
-    // TODO aspect, position, meaning
+    if (
+      f.theme &&
+      !Object.values(s.readings[f.theme] || {}).some(
+        (x) => x && JSON.stringify(x) !== emptyDoc
+      )
+    )
+      return false;
+    if (f.position && f.meaning) {
+      return s.circle.some(
+        (x) => x.position === f.position && x.meaning === f.meaning
+      );
+    }
     return true;
   });
 });
@@ -251,12 +438,12 @@ export function pointsToStr(points: Point[]): string {
 }
 
 const starOuterRadius = 100;
-const starInnerRadius = 90;
+const starInnerRadius = 95;
 const positionRuneRadius = 90;
 const meaningRuneOuterRadius = 110;
 const meaningRuneInnerRadius = 70;
-export const meaningRuneSize = 16;
-export const positionRuneSize = 10;
+const meaningRuneSize = 16;
+// const positionRuneSize = 10;
 export const middleCircleRadius = 80;
 export const innerCircleRadius = 60;
 export const north = -0.5 * Math.PI;
@@ -294,10 +481,10 @@ function distance(p1: Point, p2: Point): number {
 }
 
 export const snapMovingRune = atom<null, Point>(null, (get, set, p) => {
+  set(movingRuneCoords, p);
   const spread = get(currentSpread);
   const meaning = get(movingRune);
   if (!spread || meaning === "") return;
-  set(movingRuneCoords, p);
   const [pp, n] = nearestPoint(p);
   const isClose = distance(p, pp) < meaningRuneSize;
   if (isClose) {

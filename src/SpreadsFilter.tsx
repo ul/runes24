@@ -6,22 +6,36 @@ import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import TextField from "@mui/material/TextField";
-import { filters, Futhark } from "./state";
+import { filters, Futhark, querents, themes } from "./state";
 import { useAtom } from "jotai";
 import Stack from "@mui/material/Stack";
 
 export function SpreadsFilter() {
   const [f, setFilters] = useAtom(filters);
-  // TODO
-  const querents = [{ label: "Ruslan" }, { label: "Katherine" }];
+  const [allQuerents] = useAtom(querents);
+  const [allThemes] = useAtom(themes);
   return (
     <Stack direction="row" spacing={2}>
+      <Autocomplete
+        options={allQuerents}
+        onChange={(_, value) => {
+          setFilters({
+            ...f,
+            querent: typeof value === "string" ? value : value?.label ?? "",
+          });
+        }}
+        value={allQuerents.find((x) => x.label === f.querent) || null}
+        sx={{ flex: 3 }}
+        renderInput={(params) => (
+          <TextField variant="standard" {...params} label="Querent" />
+        )}
+      />
       <TextField
         variant="standard"
-        label="Topic"
+        label="Title"
         sx={{ flex: 3 }}
-        value={f.topic}
-        onChange={(e) => setFilters({ ...f, topic: e.target.value })}
+        value={f.title}
+        onChange={(e) => setFilters({ ...f, title: e.target.value })}
       />
       <DatePicker
         label="From"
@@ -47,44 +61,29 @@ export function SpreadsFilter() {
           <TextField variant="standard" sx={{ flex: 2 }} {...params} />
         )}
       />
-      <Autocomplete
-        options={querents}
-        onChange={(_, value) => {
-          setFilters({
-            ...f,
-            querent:
-              typeof value === "string"
-                ? value
-                : value === null
-                ? ""
-                : value.label,
-          });
-        }}
-        value={querents.find((x) => x.label === f.querent) || null}
-        sx={{ flex: 3 }}
-        renderInput={(params) => (
-          <TextField variant="standard" {...params} label="Querent" />
-        )}
-      />
       <FormControl variant="standard" sx={{ flex: 2 }}>
-        <InputLabel id="aspect-select-label">Aspect</InputLabel>
+        <InputLabel id="theme-select-label">Theme</InputLabel>
         <Select
-          value={f.aspect}
-          labelId="aspect-select-label"
-          label="Aspect"
+          value={f.theme}
+          labelId="theme-select-label"
+          label="Theme"
           onChange={(e) => {
-            setFilters({ ...f, aspect: e.target.value });
+            setFilters({ ...f, theme: e.target.value });
           }}
         >
-          <MenuItem value="">All</MenuItem>
-          <MenuItem value="Money">Money</MenuItem>
-          <MenuItem value="Love">Love</MenuItem>
+          <MenuItem value="">None</MenuItem>
+          <MenuItem value="AllRunes">All Runes</MenuItem>
+          {allThemes.map(({ name }) => (
+            <MenuItem key={name} value={name}>
+              {name}
+            </MenuItem>
+          ))}
         </Select>
       </FormControl>
       <FormControl variant="standard" sx={{ flex: 1 }}>
         <InputLabel id="position-select-label">Position</InputLabel>
         <Select
-          value={f.position === null ? "" : f.position}
+          value={f.position || ""}
           labelId="position-select-label"
           label="Position"
           onChange={(e) => {
@@ -92,8 +91,8 @@ export function SpreadsFilter() {
           }}
         >
           <MenuItem value="">None</MenuItem>
-          {Futhark.map((rune, idx) => (
-            <MenuItem key={rune} value={idx}>
+          {Futhark.map((rune) => (
+            <MenuItem key={rune} value={rune}>
               {rune}
             </MenuItem>
           ))}
@@ -102,7 +101,7 @@ export function SpreadsFilter() {
       <FormControl variant="standard" sx={{ flex: 1 }}>
         <InputLabel id="meaning-select-label">Meaning</InputLabel>
         <Select
-          value={f.meaning === null ? "" : f.meaning}
+          value={f.meaning || ""}
           labelId="meaning-select-label"
           label="Meaning"
           onChange={(e) => {
@@ -110,8 +109,8 @@ export function SpreadsFilter() {
           }}
         >
           <MenuItem value="">None</MenuItem>
-          {Futhark.map((rune, idx) => (
-            <MenuItem key={rune} value={idx}>
+          {Futhark.map((rune) => (
+            <MenuItem key={rune} value={rune}>
               {rune}
             </MenuItem>
           ))}

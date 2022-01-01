@@ -28,6 +28,37 @@ body {
   /*alignment-baseline: central;*/
 }
 
+.reversed {
+  -webkit-transform: rotate(180deg);
+  transform: rotate(180deg);
+}
+
+.token {
+  width: 3rem;
+  height: 3rem;
+  margin: 0.25rem;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.token.pointer,
+.token.pointer sup,
+.token.pointer span {
+  cursor: pointer;
+}
+
+.token sup {
+  color: #c00;
+  font-size: 0.8rem;
+  align-self: baseline;
+}
+
+.token span {
+  color: #473928;
+}
+
 svg,
 .canvas,
 .no-select {
@@ -97,3 +128,51 @@ svg,
   fill-opacity: 1;
 }
 /* END SVG */
+
+.text-editor .remirror-editor-wrapper {
+  padding-top: 0;
+}
+
+.text-editor.remirror-theme .remirror-editor.ProseMirror {
+  box-shadow: none;
+  /* border-bottom: 1px solid rgba(0, 0, 0, 0.01); */
+  border-radius: 0;
+  min-height: 70px;
+  padding: 0;
+  overflow-y: auto;
+}
+
+.text-editor-toolbar.remirror-floating-popover {
+  background-color: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+.text-editor-toolbar .text-editor-button.text-editor-red-button {
+  background-color: rgba(255, 0, 0, 0.3);
+}
+
+.text-editor-toolbar .text-editor-button.text-editor-red-button:hover {
+  background-color: rgba(255, 0, 0, 0.7);
+}
+
+.text-editor-toolbar .text-editor-button.text-editor-green-button {
+  background-color: rgba(0, 128, 0, 0.3);
+}
+
+.text-editor-toolbar .text-editor-button.text-editor-green-button:hover {
+  background-color: rgba(0, 128, 0, 0.7);
+}
+
+.text-editor-toolbar .text-editor-button.text-editor-blue-button {
+  background-color: rgba(0, 0, 255, 0.3);
+}
+
+.text-editor-toolbar .text-editor-button.text-editor-blue-button:hover {
+  background-color: rgba(0, 0, 255, 0.7);
+}
+
+footer a {
+  color: #039be5;
+  text-decoration: none;
+}

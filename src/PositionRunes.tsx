@@ -1,14 +1,37 @@
+import { useAtom } from "jotai";
+import { useUpdateAtom } from "jotai/utils";
 import React from "react";
-import { Futhark, positionsStar, positionRuneSize } from "./state";
+import {
+  chains,
+  currentChain,
+  Futhark,
+  positionsStar,
+  temporaryPin,
+} from "./state";
 
 function PositionRune({ rune, position: [x, y] }) {
+  const [allChains] = useAtom(chains);
+  const setCurrentChain = useUpdateAtom(currentChain);
+  const setTempPin = useUpdateAtom(temporaryPin);
   return (
     <text
       className="rune position-rune"
       x={x}
-      y={y + 0.5 * positionRuneSize}
+      y={y}
+      textAnchor="middle"
+      dominantBaseline="central"
       onClick={() => {
-        console.log("reset current rune");
+        let i = 0;
+        for (const chain of allChains) {
+          for (const slot of chain) {
+            if (slot.position === rune) {
+              setTempPin(rune);
+              setCurrentChain(i);
+              return;
+            }
+          }
+          i++;
+        }
       }}
     >
       {rune}

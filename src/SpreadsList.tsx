@@ -9,21 +9,21 @@ import Stack from "@mui/material/Stack";
 
 const columns: GridColDef[] = [
   {
+    field: "querent",
+    headerName: "Querent",
+    width: 300,
+  },
+  {
+    field: "title",
+    headerName: "Title",
+    width: 500,
+  },
+  {
     field: "date",
     headerName: "Date",
     type: "date",
     width: 110,
     valueFormatter: ({ value }) => dayjs(value).format("DD/MM/YY"),
-  },
-  {
-    field: "topic",
-    headerName: "Topic",
-    width: 500,
-  },
-  {
-    field: "querent",
-    headerName: "Querent",
-    width: 300,
   },
 ];
 
