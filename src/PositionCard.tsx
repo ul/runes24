@@ -1,41 +1,31 @@
-import Stack from "@mui/material/Stack";
+import React, { memo, useCallback } from "react";
 import { useAtom } from "jotai";
-import React from "react";
-import { descriptions, readings, Rune } from "./state";
+import Stack from "@mui/material/Stack";
 import { TextEditor } from "./TextEditor";
+import { themeReading, Rune, themeDescription } from "./state";
 
-export function PositionCard({
+export const PositionCard = memo(function PositionCard({
   position,
   theme,
 }: {
   position: Rune;
   theme: string;
 }) {
-  const [spreadReadings, setReadings] = useAtom(readings);
-  const [desc, setDesc] = useAtom(descriptions);
-  const themeDesc = desc[theme] || {};
-  const themeReadings = spreadReadings[theme] || {};
+  const [reading, setReading] = useAtom(themeReading([theme, position]));
+  const [desc, setDesc] = useAtom(themeDescription([theme, position]));
+  const updateDesc = useCallback((json: any) => setDesc(json), [setDesc]);
+  const updateReading = useCallback(
+    (json: any) => setReading(json),
+    [setReading]
+  );
   return (
     <Stack flexGrow={1}>
       <TextEditor
         className="text-editor-theme-description"
-        content={themeDesc[position]}
-        onChange={(json: any) => {
-          setDesc({
-            ...desc,
-            [theme]: { ...themeDesc, [position]: json },
-          });
-        }}
+        content={desc}
+        onChange={updateDesc}
       />
-      <TextEditor
-        content={themeReadings[position]}
-        onChange={(json: any) => {
-          setReadings({
-            ...spreadReadings,
-            [theme]: { ...themeReadings, [position]: json },
-          });
-        }}
-      />
+      <TextEditor content={reading} onChange={updateReading} />
     </Stack>
   );
-}
+});

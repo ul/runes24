@@ -1,15 +1,23 @@
+import React from "react";
 import { useAtom } from "jotai";
 import { useUpdateAtom } from "jotai/utils";
-import React from "react";
 import {
   chains,
   currentChain,
   Futhark,
+  Point,
   positionsStar,
+  Rune,
   temporaryPin,
 } from "./state";
 
-function PositionRune({ rune, position: [x, y] }) {
+function PositionRune({
+  rune,
+  position: [x, y],
+}: {
+  rune: Rune;
+  position: Point;
+}) {
   const [allChains] = useAtom(chains);
   const setCurrentChain = useUpdateAtom(currentChain);
   const setTempPin = useUpdateAtom(temporaryPin);

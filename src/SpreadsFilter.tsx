@@ -1,4 +1,5 @@
 import React from "react";
+import { useAtom } from "jotai";
 import Autocomplete from "@mui/material/Autocomplete";
 import DatePicker from "@mui/lab/DatePicker";
 import FormControl from "@mui/material/FormControl";
@@ -6,9 +7,8 @@ import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import TextField from "@mui/material/TextField";
-import { filters, Futhark, querents, Rune, themes } from "./state";
-import { useAtom } from "jotai";
 import Stack from "@mui/material/Stack";
+import { filters, Futhark, querents, Rune, themes } from "./state";
 
 export function SpreadsFilter() {
   const [f, setFilters] = useAtom(filters);

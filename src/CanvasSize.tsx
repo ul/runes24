@@ -1,6 +1,6 @@
 import React from "react";
-import Slider from "@mui/material/Slider";
 import { useAtom } from "jotai";
+import Slider from "@mui/material/Slider";
 import { canvasSize } from "./state";
 
 export function CanvasSize() {

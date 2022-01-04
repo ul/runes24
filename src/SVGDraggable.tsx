@@ -17,7 +17,7 @@ function isLeftButton(e: MouseEvent): boolean {
 }
 
 /** Project client{X,Y} to SVG node {x,y}. */
-function svgLocation(node: SVGGraphicsElement, [x, y]): Point {
+function svgLocation(node: SVGGraphicsElement, [x, y]: Point): Point {
   SVGPoint.x = x;
   SVGPoint.y = y;
   const p = getScreenPoint(node);

@@ -1,8 +1,8 @@
+import React from "react";
 import { useAtom } from "jotai";
 import { useUpdateAtom } from "jotai/utils";
-import React from "react";
+import { useSVGDraggable } from "./SVGDraggable";
 import {
-  currentSpread,
   Futhark,
   meaningsOuterStar,
   meaningsInnerStar,
@@ -11,15 +11,20 @@ import {
   reverseRune,
   snapMovingRune,
   straightenFreeRunes,
+  Rune,
+  currentSpreadLocked,
+  slotByMeaning,
+  isReversedByMeaning,
 } from "./state";
-import { useSVGDraggable } from "./SVGDraggable";
 
 function norm(x: number): number {
   return Math.round(1e4 * x) / 1e4;
 }
 
-function MeaningRune({ rune, index }) {
-  const [spread] = useAtom(currentSpread);
+function MeaningRune({ rune, index }: { rune: Rune; index: number }) {
+  const [isLocked] = useAtom(currentSpreadLocked);
+  const [slotValue] = useAtom(slotByMeaning(rune));
+  const [isRX] = useAtom(isReversedByMeaning(rune));
   const [movingRuneValue, setMovingRune] = useAtom(movingRune);
   const [movingRuneXY] = useAtom(movingRuneCoords);
   const reverse = useUpdateAtom(reverseRune);
@@ -27,22 +32,21 @@ function MeaningRune({ rune, index }) {
   const ref = useSVGDraggable(
     {
       start: () => {
-        if (spread.locked) return;
+        if (isLocked) return;
         setMovingRune(rune);
       },
       stop: () => {
-        if (spread.locked) return;
-        setMovingRune("");
-        fixReverse();
+        if (isLocked) return;
+        setMovingRune(undefined);
+        fixReverse(null);
       },
       xy: snapMovingRune,
     },
-    [spread.locked]
+    [isLocked]
   );
-  const slot = spread.circle.find(({ meaning }) => meaning === rune);
   const isMoving = movingRuneValue === rune;
-  const [x, y] = slot
-    ? meaningsInnerStar[Futhark.indexOf(slot.position)]
+  const [x, y] = slotValue
+    ? meaningsInnerStar[Futhark.indexOf(slotValue.position)]
     : isMoving
     ? movingRuneXY
     : meaningsOuterStar[index];
@@ -55,13 +59,11 @@ function MeaningRune({ rune, index }) {
       textAnchor="middle"
       dominantBaseline="central"
       transform={
-        !isMoving && spread.rx.includes(rune)
-          ? `rotate(180,${norm(x)},${norm(y)})`
-          : null
+        !isMoving && isRX ? `rotate(180,${norm(x)},${norm(y)})` : undefined
       }
       onDoubleClick={(e) => {
         e.preventDefault();
-        if (spread.locked) return;
+        if (isLocked || !slotValue) return;
         reverse(rune);
       }}
     >

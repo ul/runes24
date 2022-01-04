@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from "react";
+import React, { useMemo, useCallback, memo } from "react";
 import {
   BoldExtension,
   ItalicExtension,
@@ -151,30 +151,44 @@ function BubbleMenu() {
   );
 }
 
-export function TextEditor({ content, onChange, className }) {
-  const { manager, state, setState } = useRemirror({
-    extensions: () => [
-      new BoldExtension(),
-      new ItalicExtension(),
-      new UnderlineExtension(),
-      new TextColorExtension(),
-    ],
-    content,
-  });
+const hooks = [
+  () => {
+    const commands = useCommands();
+    const handleCopy = useCallback(() => commands.copy(), [commands]);
+    const handlePaste = useCallback(() => commands.paste(), [commands]);
+    const handleCut = useCallback(() => commands.cut(), [commands]);
 
-  const hooks = [
-    () => {
-      const commands = useCommands();
-      const handleCopy = useCallback(() => commands.copy(), [commands]);
-      const handlePaste = useCallback(() => commands.paste(), [commands]);
-      const handleCut = useCallback(() => commands.cut(), [commands]);
+    // "Mod" means platform agnostic modifier key - i.e. Ctrl on Windows, or Cmd on MacOS
+    useKeymap("Mod-c", handleCopy);
+    useKeymap("Mod-v", handlePaste);
+    useKeymap("Mod-x", handleCut);
+  },
+];
 
-      // "Mod" means platform agnostic modifier key - i.e. Ctrl on Windows, or Cmd on MacOS
-      useKeymap("Mod-c", handleCopy);
-      useKeymap("Mod-v", handlePaste);
-      useKeymap("Mod-x", handleCut);
+const extensions = () => [
+  new BoldExtension(),
+  new ItalicExtension(),
+  new UnderlineExtension(),
+  new TextColorExtension(),
+];
+
+export const TextEditor = memo(function TextEditor({
+  content,
+  onChange,
+  className,
+}: {
+  content: any;
+  onChange: (json: any) => void;
+  className?: string;
+}) {
+  const { manager, state, setState } = useRemirror({ extensions, content });
+  const update = useCallback(
+    ({ state }) => {
+      setState(state);
+      onChange(state.doc.toJSON());
     },
-  ];
+    [setState, onChange]
+  );
 
   return (
     <div className={`remirror-theme text-editor ${className ?? ""}`}>
@@ -182,14 +196,11 @@ export function TextEditor({ content, onChange, className }) {
         manager={manager}
         initialContent={state}
         hooks={hooks}
-        onChange={({ state }) => {
-          setState(state);
-          onChange(state.doc.toJSON());
-        }}
+        onChange={update}
       >
         <EditorComponent />
         <BubbleMenu />
       </Remirror>
     </div>
   );
-}
+});

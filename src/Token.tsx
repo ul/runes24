@@ -1,9 +1,9 @@
-import Paper from "@mui/material/Paper";
+import React, { memo } from "react";
 import { useAtom } from "jotai";
-import React from "react";
-import { currentSpread, Rune, runeColors } from "./state";
+import Paper from "@mui/material/Paper";
+import { Rune, runeColor, slotByPosition, isReversedByPosition } from "./state";
 
-export function Token({
+export const Token = memo(function Token({
   onClick,
   position,
   noColor,
@@ -12,25 +12,21 @@ export function Token({
   onClick?: () => void;
   noColor?: boolean;
 }) {
-  const [spread] = useAtom(currentSpread);
-  const [colors] = useAtom(runeColors);
-  const slot = spread?.circle.find((s) => s.position === position);
-  const meaning = slot?.meaning;
+  const [slotValue] = useAtom(slotByPosition(position));
+  const [color] = useAtom(runeColor(position));
+  const [rx] = useAtom(isReversedByPosition(position));
+  const meaning = slotValue?.meaning;
   return (
     <Paper
       className={`token rune${onClick ? " pointer" : ""}`}
       onClick={onClick}
       sx={{
-        backgroundColor: noColor ? null : colors[position] || null,
+        backgroundColor: noColor ? null : color || null,
       }}
       elevation={noColor ? 0 : 1}
     >
       <sup>{position}</sup>
-      <span
-        className={meaning && spread?.rx.includes(meaning) ? "reversed" : null}
-      >
-        {meaning}
-      </span>
+      <span className={rx ? "reversed" : undefined}>{meaning}</span>
     </Paper>
   );
-}
+});

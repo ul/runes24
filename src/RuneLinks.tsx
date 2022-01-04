@@ -1,17 +1,25 @@
 import { useAtom } from "jotai";
-import React from "react";
+import React, { memo } from "react";
 import {
-  currentSpread,
+  currentCircle,
   Futhark,
   innerCircleRadius,
   north,
   pointsToStr,
   polygonPoint,
+  Rune,
 } from "./state";
 
-const pp = (k, rot) => polygonPoint(Futhark.length, innerCircleRadius, k, rot);
+const pp = (k: number, rot: number) =>
+  polygonPoint(Futhark.length, innerCircleRadius, k, rot);
 
-function RuneLink({ meaning, position }) {
+const RuneLink = memo(function RuneLink({
+  meaning,
+  position,
+}: {
+  meaning: Rune;
+  position: Rune;
+}) {
   const isShort = meaning === position;
   const [cx, cy] = pp(Futhark.indexOf(position), north);
   return (
@@ -30,13 +38,13 @@ function RuneLink({ meaning, position }) {
       )}
     </g>
   );
-}
+});
 
 export function RuneLinks() {
-  const [{ circle }] = useAtom(currentSpread);
+  const [circle] = useAtom(currentCircle);
   return (
     <g>
-      {circle.map(({ position, meaning }) => (
+      {circle?.map(({ position, meaning }) => (
         <RuneLink
           key={`${position}${meaning}`}
           meaning={meaning}

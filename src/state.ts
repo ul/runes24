@@ -1,4 +1,6 @@
 import { atom } from "jotai";
+import { atomFamily } from "jotai/utils";
+import { shallowEqualArrays } from "shallow-equal";
 import { invoke } from "@tauri-apps/api/tauri";
 import defaultThemes from "./themes.json";
 
@@ -125,6 +127,25 @@ export const descriptions = atom<
   }
 );
 
+export const themeDescription = atomFamily(
+  ([theme, position]: [string, Rune]) =>
+    atom<any, any>(
+      (get) => {
+        const t = get(descriptions)[theme];
+        return t && t[position];
+      },
+      (get, set, newDescription) => {
+        const currentDescription = get(descriptions);
+        const t = currentDescription[theme] || {};
+        set(descriptions, {
+          ...currentDescription,
+          [theme]: { ...t, [position]: newDescription },
+        });
+      }
+    ),
+  shallowEqualArrays
+);
+
 export const createSpread = atom<null, string>(null, (get, set, id) => {
   const state = get(persistentState);
   const spreads: Record<string, Spread> = {
@@ -170,9 +191,9 @@ export const querents = atom<Array<{ label: string }>>((get) => {
 
 export const byChains = atom<boolean>(false);
 
-export const currentSpreadId = atom<string | null>((get) => {
+export const currentSpreadId = atom<string | void>((get) => {
   let r = get(route);
-  return r.screen === Screen.EditSpread ? r.spreadId : null;
+  return r.screen === Screen.EditSpread ? r.spreadId : undefined;
 });
 
 export const currentSpread = atom<Spread | null, Spread>(
@@ -188,6 +209,22 @@ export const currentSpread = atom<Spread | null, Spread>(
       spreads: { ...state.spreads, [spread.id]: spread },
     });
   }
+);
+
+export const currentCircle = atom<Chain | void>(
+  (get) => get(currentSpread)?.circle
+);
+
+export const slotByPosition = atomFamily((position: Rune) =>
+  atom<Slot | void>((get) =>
+    get(currentCircle)?.find((s) => s.position === position)
+  )
+);
+
+export const slotByMeaning = atomFamily((meaning: Rune) =>
+  atom<Slot | void>((get) =>
+    get(currentCircle)?.find((s) => s.meaning === meaning)
+  )
 );
 
 export const resetOrder = atom<null, null>(null, (get, set) => {
@@ -211,6 +248,25 @@ export const readings = atom<
   }
 );
 
+export const themeReading = atomFamily(
+  ([theme, position]: [string, Rune]) =>
+    atom<any, any>(
+      (get) => {
+        const t = get(readings)[theme];
+        return t && t[position];
+      },
+      (get, set, newReading) => {
+        const currentReadings = get(readings);
+        const t = currentReadings[theme] || {};
+        set(readings, {
+          ...currentReadings,
+          [theme]: { ...t, [position]: newReading },
+        });
+      }
+    ),
+  shallowEqualArrays
+);
+
 export const straightenFreeRunes = atom<null, null>(null, (get, set) => {
   const spread = get(currentSpread);
   if (!spread) return;
@@ -223,7 +279,7 @@ export const straightenFreeRunes = atom<null, null>(null, (get, set) => {
 
 export const pinCurrentChain = atom<null, Rune>(null, (get, set, newPin) => {
   const chainIdx = get(currentChain);
-  if (chainIdx < 0) return;
+  if (typeof chainIdx === "undefined") return;
   const spread = get(currentSpread);
   if (!spread) return;
   const allChains = get(chains);
@@ -261,7 +317,7 @@ export const chains = atom<Chain[]>((get) => {
   return result.sort((a, b) => b.length - a.length);
 });
 
-export const temporaryPin = atom<Rune | "">("");
+export const temporaryPin = atom<Rune | void>(undefined);
 
 export const pinnedChains = atom<Chain[]>((get) => {
   const spread = get(currentSpread);
@@ -272,7 +328,7 @@ export const pinnedChains = atom<Chain[]>((get) => {
     const runes = slots.map((s) => s.position);
     const positions = new Set(runes);
     const pin =
-      (tempPin !== "" && positions.has(tempPin) && tempPin) ||
+      (tempPin && positions.has(tempPin) && tempPin) ||
       spread?.chainPins.find((p) => positions.has(p)) ||
       runes[0];
     const offset = pin ? slots.findIndex((s) => s.position === pin) : 0;
@@ -285,7 +341,7 @@ export const pinnedChains = atom<Chain[]>((get) => {
   return result;
 });
 
-export const currentChain = atom<number>(-1);
+export const currentChain = atom<number | void>(undefined);
 
 export const runeColors = atom<Record<Rune, string>>((get) => {
   const allChains = get(chains);
@@ -301,6 +357,10 @@ export const runeColors = atom<Record<Rune, string>>((get) => {
   return result;
 });
 
+export const runeColor = atomFamily((position: Rune) =>
+  atom<string | void>((get) => get(runeColors)[position])
+);
+
 export const runeChains = atom<Record<Rune, number>>((get) => {
   const allChains = get(chains);
   const result = {} as Record<Rune, number>;
@@ -311,6 +371,21 @@ export const runeChains = atom<Record<Rune, number>>((get) => {
   });
   return result;
 });
+
+export const currentRX = atom<Rune[] | void>((get) => get(currentSpread)?.rx);
+
+export const isReversedByPosition = atomFamily((position: Rune) =>
+  atom<boolean>((get) => {
+    const meaning = get(slotByPosition(position))?.meaning;
+    return !!(meaning && get(currentRX)?.includes(meaning));
+  })
+);
+
+export const isReversedByMeaning = atomFamily((meaning: Rune) =>
+  atom<boolean>((get) => {
+    return !!get(currentRX)?.includes(meaning);
+  })
+);
 
 export const reverseRune = atom<null, Rune>(null, (get, set, rune) => {
   const spread = get(currentSpread);
@@ -325,6 +400,35 @@ export const reverseRune = atom<null, Rune>(null, (get, set, rune) => {
     }
   }
 });
+
+export const currentOrder = atom((get) => get(currentSpread)?.order);
+
+export const currentSpreadLocked = atom<boolean>(
+  (get) => !!get(currentSpread)?.locked
+);
+
+// TODO More precise ThemeName type?
+export const themeOrder = atomFamily((theme: string) =>
+  atom<Rune[], Rune[]>(
+    (get) => {
+      const order = get(currentOrder);
+      return (
+        (order && order[theme]) ||
+        get(themes).find((t) => t.name === theme)?.runes ||
+        []
+      );
+    },
+    (get, set, newThemeOrder) => {
+      const spread = get(currentSpread);
+      if (!spread) return;
+      const order = {
+        ...spread.order,
+        [theme]: newThemeOrder,
+      };
+      set(currentSpread, { ...spread, order });
+    }
+  )
+);
 
 export const filters = atom<Filters>({
   title: "",
@@ -374,11 +478,12 @@ export const filteredSpreads = atom<Spread[]>((get) => {
 });
 
 export const canvasSize = atom<number>(600);
-export const factor = atom<number>(250.0);
-export const cx = atom<number>((get) => 0.5 * get(factor));
-export const cy = atom<number>((get) => 0.5 * get(factor));
-export const scale = atom<number>((get) => get(canvasSize) / get(factor));
-export const movingRune = atom<Rune | "">("");
+export const canvasFactor = 250.0;
+export const canvasCenter = [0.5 * canvasFactor, 0.5 * canvasFactor];
+export const canvasScale = atom<number>(
+  (get) => get(canvasSize) / canvasFactor
+);
+export const movingRune = atom<Rune | undefined>(undefined);
 export const movingRuneCoords = atom<Point>([0, 0]);
 
 function linearSpace(start: number, stop: number, n: number): number[] {
@@ -495,7 +600,7 @@ export const snapMovingRune = atom<null, Point>(null, (get, set, p) => {
   set(movingRuneCoords, p);
   const spread = get(currentSpread);
   const meaning = get(movingRune);
-  if (!spread || meaning === "") return;
+  if (!spread || !meaning) return;
   const [pp, n] = nearestPoint(p);
   const isClose = distance(p, pp) < meaningRuneSize;
   if (isClose) {

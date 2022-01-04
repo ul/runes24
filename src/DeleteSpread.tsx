@@ -1,32 +1,32 @@
 import React, { useState } from "react";
 import { useAtom } from "jotai";
-import { currentSpread, route, Screen, deleteSpread } from "./state";
+import { useUpdateAtom } from "jotai/utils";
 import Stack from "@mui/material/Stack";
 import DeleteIcon from "@mui/icons-material/Delete";
 import Button from "@mui/material/Button";
+import IconButton from "@mui/material/IconButton";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogActions from "@mui/material/DialogActions";
-import { useUpdateAtom } from "jotai/utils";
+import { currentSpreadId, route, Screen, deleteSpread } from "./state";
 
 export function DeleteSpread() {
-  const [spread] = useAtom(currentSpread);
+  const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
+  const [spreadId] = useAtom(currentSpreadId);
   const [_, setRoute] = useAtom(route);
   const doDeleteSpread = useUpdateAtom(deleteSpread);
-  const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
-  if (!spread) return null;
+  if (!spreadId) return null;
   return (
     <>
       <Stack direction="row" justifyContent="center">
-        <Button
-          variant="outlined"
+        <IconButton
+          color="primary"
           onClick={() => setDeleteConfirmationOpen(true)}
-          startIcon={<DeleteIcon />}
         >
-          Delete
-        </Button>
+          <DeleteIcon />
+        </IconButton>
       </Stack>
       <Dialog
         open={deleteConfirmationOpen}
@@ -54,7 +54,7 @@ export function DeleteSpread() {
             onClick={() => {
               setDeleteConfirmationOpen(false);
               setRoute({ screen: Screen.SpreadsList });
-              doDeleteSpread(spread.id);
+              doDeleteSpread(spreadId);
             }}
             autoFocus
           >

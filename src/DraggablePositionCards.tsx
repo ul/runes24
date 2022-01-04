@@ -1,10 +1,10 @@
 import React, { Fragment, useCallback } from "react";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
-import { currentSpread, themes } from "./state";
 import { useAtom } from "jotai";
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import Stack from "@mui/material/Stack";
 import { Token } from "./Token";
 import { PositionCard } from "./PositionCard";
+import { Rune, themeOrder } from "./state";
 
 function reorder<T>(list: T[], startIndex: number, endIndex: number): T[] {
   const result = Array.from(list);
@@ -20,29 +20,16 @@ export function DraggablePositionCards({
   theme: string;
   runes?: Rune[];
 }) {
-  const [spread, setSpread] = useAtom(currentSpread);
-  const [themeSpecs] = useAtom(themes);
-  const orderedRunes =
-    runes ||
-    spread?.order[theme] ||
-    themeSpecs.find((t) => t.name === theme)?.runes ||
-    [];
+  const [order, setOrder] = useAtom(themeOrder(theme));
+  const orderedRunes = runes || order;
   const onDragEnd = useCallback(
     (result) => {
-      if (!spread || !result.destination) return;
-      setSpread({
-        ...spread,
-        order: {
-          ...spread.order,
-          [theme]: reorder(
-            orderedRunes,
-            result.source.index,
-            result.destination.index
-          ),
-        },
-      });
+      if (!result.destination) return;
+      setOrder(
+        reorder(orderedRunes, result.source.index, result.destination.index)
+      );
     },
-    [spread, setSpread, orderedRunes]
+    [orderedRunes, setOrder]
   );
   return (
     <DragDropContext onDragEnd={onDragEnd}>

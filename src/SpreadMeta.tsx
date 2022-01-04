@@ -3,12 +3,12 @@ import { useAtom } from "jotai";
 import TextField from "@mui/material/TextField";
 import DatePicker from "@mui/lab/DatePicker";
 import Autocomplete from "@mui/material/Autocomplete";
-import { currentSpread, querents } from "./state";
 import Stack from "@mui/material/Stack";
 import Switch from "@mui/material/Switch";
 import Icon from "@mui/material/Icon";
 import LockOpenIcon from "@mui/icons-material/LockOpen";
 import LockIcon from "@mui/icons-material/Lock";
+import { currentSpread, querents } from "./state";
 
 export function SpreadMeta() {
   const [spread, setSpread] = useAtom(currentSpread);

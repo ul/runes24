@@ -1,4 +1,5 @@
 import React from "react";
+import { useAtom } from "jotai";
 import Box from "@mui/material/Box";
 import Tab from "@mui/material/Tab";
 import TabContext from "@mui/lab/TabContext";
@@ -8,7 +9,6 @@ import Paper from "@mui/material/Paper";
 import { AllRunes } from "./AllRunes";
 import { Theme } from "./Theme";
 import { themes } from "./state";
-import { useAtom } from "jotai";
 
 export function Reading() {
   const [activeTab, setActiveTab] = React.useState("AllRunes");
