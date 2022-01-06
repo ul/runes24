@@ -1,6 +1,5 @@
 import React from "react";
-import { useAtom } from "jotai";
-import { useUpdateAtom } from "jotai/utils";
+import { useAtom } from "./atom";
 import Stack from "@mui/material/Stack";
 import Divider from "@mui/material/Divider";
 import Button from "@mui/material/Button";
@@ -10,9 +9,7 @@ import { ChainsSwitch } from "./ChainsSwitch";
 import { currentChain, resetOrder, Rune, runeChains } from "./state";
 
 export function FutharkOrder() {
-  const [runeToChain] = useAtom(runeChains);
-  const setCurrentChain = useUpdateAtom(currentChain);
-  const doResetOrder = useUpdateAtom(resetOrder);
+  const runeToChain = useAtom(runeChains);
   return (
     <Stack>
       <Stack
@@ -22,12 +19,12 @@ export function FutharkOrder() {
         mb={1}
       >
         <ChainsSwitch />
-        <Button onClick={() => doResetOrder(null)}>Reset</Button>
+        <Button onClick={() => resetOrder()}>Reset</Button>
       </Stack>
       <RunesOrder
         theme="AllRunes"
         onClick={(rune: Rune) => {
-          setCurrentChain(runeToChain[rune]);
+          currentChain.reset(runeToChain[rune]);
         }}
       />
       <Divider orientation="horizontal" flexItem sx={{ mt: 2, mb: 1 }} />

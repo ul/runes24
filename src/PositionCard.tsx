@@ -1,8 +1,14 @@
 import React, { memo, useCallback } from "react";
-import { useAtom } from "jotai";
+import { useAtom } from "./atom";
 import Stack from "@mui/material/Stack";
 import { TextEditor } from "./TextEditor";
-import { themeReading, themeDescription, RuneOrSum } from "./state";
+import {
+  themeReading,
+  RuneOrSum,
+  themeDescription,
+  setThemeDescription,
+  setThemeReading,
+} from "./state";
 
 export const PositionCard = memo(function PositionCard({
   position,
@@ -11,12 +17,15 @@ export const PositionCard = memo(function PositionCard({
   position: RuneOrSum;
   theme: string;
 }) {
-  const [reading, setReading] = useAtom(themeReading([theme, position]));
-  const [desc, setDesc] = useAtom(themeDescription([theme, position]));
-  const updateDesc = useCallback((json: any) => setDesc(json), [setDesc]);
+  const reading = useAtom(themeReading(theme, position));
+  const desc = useAtom(themeDescription(theme, position));
+  const updateDesc = useCallback(
+    (json: any) => setThemeDescription(theme, position, json),
+    [theme, position]
+  );
   const updateReading = useCallback(
-    (json: any) => setReading(json),
-    [setReading]
+    (json: any) => setThemeReading(theme, position, json),
+    [theme, position]
   );
   return (
     <Stack flexGrow={1}>

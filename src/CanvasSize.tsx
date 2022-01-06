@@ -1,18 +1,18 @@
 import React from "react";
-import { useAtom } from "jotai";
+import { useAtom } from "./atom";
 import Slider from "@mui/material/Slider";
 import { canvasSize } from "./state";
 
 export function CanvasSize() {
-  const [canvasSizeValue, setCanvasSize] = useAtom(canvasSize);
+  const size = useAtom(canvasSize);
   return (
     <Slider
-      value={canvasSizeValue}
+      value={size}
       min={200}
       max={1600}
       step={10}
       onChange={(_, value) =>
-        setCanvasSize(Array.isArray(value) ? value[0] : value)
+        canvasSize.reset(Array.isArray(value) ? value[0] : value)
       }
     />
   );

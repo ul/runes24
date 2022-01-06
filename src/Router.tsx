@@ -1,11 +1,11 @@
 import React from "react";
-import { useAtom } from "jotai";
+import { useAtom } from "./atom";
 import { route, Screen } from "./state";
 import { SpreadsList } from "./SpreadsList";
 import { EditSpread } from "./EditSpread";
 
 export function Router() {
-  const [currentRoute] = useAtom(route);
+  const currentRoute = useAtom(route);
   switch (currentRoute.screen) {
     case Screen.EditSpread:
       return <EditSpread />;

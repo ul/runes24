@@ -1,6 +1,5 @@
 import React from "react";
-import { useAtom } from "jotai";
-import { useUpdateAtom } from "jotai/utils";
+import { useAtom } from "./atom";
 import Stack from "@mui/material/Stack";
 import Divider from "@mui/material/Divider";
 import { RunesOrder } from "./RunesOrder";
@@ -9,8 +8,7 @@ import { ChainsSwitch } from "./ChainsSwitch";
 import { currentChain, pinnedChains } from "./state";
 
 export function Chains() {
-  const [allChains] = useAtom(pinnedChains);
-  const setCurrentChain = useUpdateAtom(currentChain);
+  const allChains = useAtom(pinnedChains);
   const runeGroups = allChains.map((chain) => chain.map((s) => s.position));
   return (
     <Stack>
@@ -23,7 +21,11 @@ export function Chains() {
         <ChainsSwitch />
       </Stack>
       {runeGroups.map((runes, i) => (
-        <RunesOrder key={i} runes={runes} onClick={() => setCurrentChain(i)} />
+        <RunesOrder
+          key={i}
+          runes={runes}
+          onClick={() => currentChain.reset(i)}
+        />
       ))}
       {runeGroups.map((group, i) => (
         <>

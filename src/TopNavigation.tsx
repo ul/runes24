@@ -5,14 +5,12 @@ import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import AddIcon from "@mui/icons-material/Add";
 import ListIcon from "@mui/icons-material/List";
-import { useAtom } from "jotai";
-import { useUpdateAtom } from "jotai/utils";
+import { useAtom } from "./atom";
 import { Screen, route, createSpread } from "./state";
 import { nanoid } from "nanoid";
 
 export function TopNavigation() {
-  const [currentRoute, setRoute] = useAtom(route);
-  const doCreateSpread = useUpdateAtom(createSpread);
+  const currentRoute = useAtom(route);
   return (
     <AppBar position="static">
       <Toolbar variant="dense">
@@ -21,8 +19,8 @@ export function TopNavigation() {
           sx={{ mr: 2 }}
           onClick={() => {
             const id = nanoid();
-            doCreateSpread(id);
-            setRoute({ screen: Screen.EditSpread, spreadId: id });
+            createSpread(id);
+            route.reset({ screen: Screen.EditSpread, spreadId: id });
           }}
         >
           <AddIcon />
@@ -40,7 +38,7 @@ export function TopNavigation() {
           <IconButton
             color="inherit"
             onClick={() => {
-              setRoute({ screen: Screen.SpreadsList });
+              route.reset({ screen: Screen.SpreadsList });
             }}
           >
             <ListIcon />

@@ -1,5 +1,5 @@
 import { useCallback, useRef } from "react";
-import { useUpdateAtom } from "jotai/utils";
+import { Atom } from "./atom";
 import { Point } from "./state";
 
 const _SVGElement = document.createElementNS(
@@ -28,8 +28,14 @@ function location(e: MouseEvent): Point {
   return [e.clientX, e.clientY];
 }
 
-export function useSVGDraggable({ start, stop, xy }, deps) {
-  const setXY = useUpdateAtom(xy);
+export function useSVGDraggable(
+  {
+    start,
+    stop,
+    setXY,
+  }: { start: () => void; stop: () => void; setXY: (p: Point) => void },
+  deps
+): (newNode: any) => void {
   const node = useRef(null);
   const drag = useCallback(
     (e: MouseEvent) => {

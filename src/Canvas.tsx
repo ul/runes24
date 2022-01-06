@@ -1,5 +1,5 @@
 import React from "react";
-import { useAtom } from "jotai";
+import { useAtom } from "./atom";
 import Stack from "@mui/material/Stack";
 import { Background } from "./Background";
 import { PositionRunes } from "./PositionRunes";
@@ -8,8 +8,8 @@ import { MeaningRunes } from "./MeaningRunes";
 import { canvasSize, canvasCenter, canvasScale } from "./state";
 
 export function Canvas() {
-  const [size] = useAtom(canvasSize);
-  const [scale] = useAtom(canvasScale);
+  const size = useAtom(canvasSize);
+  const scale = useAtom(canvasScale);
   const [cx, cy] = canvasCenter;
   return (
     <Stack alignItems="center">

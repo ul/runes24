@@ -1,6 +1,5 @@
 import React from "react";
-import { useAtom } from "jotai";
-import { useUpdateAtom } from "jotai/utils";
+import { useAtom } from "./atom";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Divider from "@mui/material/Divider";
@@ -14,12 +13,8 @@ import {
 } from "./state";
 
 export function Chain({ chain }: { chain: number }) {
-  const [allChains] = useAtom(pinnedChains);
-  const setChain = useUpdateAtom(currentChain);
-  const setTempPin = useUpdateAtom(temporaryPin);
-  const setPin = useUpdateAtom(pinCurrentChain);
-  const slots = allChains[chain];
-  const runes = slots.map((s) => s.position);
+  const allChains = useAtom(pinnedChains);
+  const runes = allChains[chain].map((s) => s.position);
   return (
     <Stack>
       <Stack
@@ -30,15 +25,15 @@ export function Chain({ chain }: { chain: number }) {
       >
         <Button
           onClick={() => {
-            setChain(undefined);
-            setTempPin(undefined);
+            currentChain.reset(undefined);
+            temporaryPin.reset(undefined);
           }}
         >
           ← All
         </Button>
-        <Button onClick={() => setPin(runes[0])}>Pin</Button>
+        <Button onClick={() => pinCurrentChain(runes[0])}>Pin</Button>
       </Stack>
-      <RunesOrder runes={runes} onClick={(rune) => setTempPin(rune)} />
+      <RunesOrder runes={runes} onClick={(rune) => temporaryPin.reset(rune)} />
       <Divider orientation="horizontal" flexItem sx={{ mt: 2, mb: 1 }} />
       <DraggablePositionCards theme="AllRunes" runes={runes} noSum />
     </Stack>

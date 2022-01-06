@@ -1,9 +1,8 @@
 import React from "react";
-import { useAtom } from "jotai";
-import { useUpdateAtom } from "jotai/utils";
+import { useAtom } from "./atom";
 import {
-  chains,
   currentChain,
+  currentChains,
   Futhark,
   Point,
   positionsStar,
@@ -18,9 +17,7 @@ function PositionRune({
   rune: Rune;
   position: Point;
 }) {
-  const [allChains] = useAtom(chains);
-  const setCurrentChain = useUpdateAtom(currentChain);
-  const setTempPin = useUpdateAtom(temporaryPin);
+  const allChains = useAtom(currentChains);
   return (
     <text
       className="rune position-rune"
@@ -33,8 +30,8 @@ function PositionRune({
         for (const chain of allChains) {
           for (const slot of chain) {
             if (slot.position === rune) {
-              setTempPin(rune);
-              setCurrentChain(i);
+              temporaryPin.reset(rune);
+              currentChain.reset(i);
               return;
             }
           }

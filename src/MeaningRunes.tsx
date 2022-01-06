@@ -1,6 +1,5 @@
 import React from "react";
-import { useAtom } from "jotai";
-import { useUpdateAtom } from "jotai/utils";
+import { atom, useAtom } from "./atom";
 import { useSVGDraggable } from "./SVGDraggable";
 import {
   Futhark,
@@ -22,25 +21,23 @@ function norm(x: number): number {
 }
 
 function MeaningRune({ rune, index }: { rune: Rune; index: number }) {
-  const [isLocked] = useAtom(currentSpreadLocked);
-  const [slotValue] = useAtom(slotByMeaning(rune));
-  const [isRX] = useAtom(isReversedByMeaning(rune));
-  const [movingRuneValue, setMovingRune] = useAtom(movingRune);
-  const [movingRuneXY] = useAtom(movingRuneCoords);
-  const reverse = useUpdateAtom(reverseRune);
-  const fixReverse = useUpdateAtom(straightenFreeRunes);
+  const isLocked = useAtom(currentSpreadLocked);
+  const slotValue = useAtom(slotByMeaning(rune));
+  const isRX = useAtom(isReversedByMeaning(rune));
+  const movingRuneValue = useAtom(movingRune);
+  const movingRuneXY = useAtom(movingRuneCoords);
   const ref = useSVGDraggable(
     {
       start: () => {
         if (isLocked) return;
-        setMovingRune(rune);
+        movingRune.reset(rune);
       },
       stop: () => {
         if (isLocked) return;
-        setMovingRune(undefined);
-        fixReverse(null);
+        movingRune.reset(undefined);
+        straightenFreeRunes();
       },
-      xy: snapMovingRune,
+      setXY: snapMovingRune,
     },
     [isLocked]
   );
@@ -64,7 +61,7 @@ function MeaningRune({ rune, index }: { rune: Rune; index: number }) {
       onDoubleClick={(e) => {
         e.preventDefault();
         if (isLocked || !slotValue) return;
-        reverse(rune);
+        reverseRune(rune);
       }}
     >
       {rune}

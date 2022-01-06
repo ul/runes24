@@ -3,14 +3,13 @@ import Divider from "@mui/material/Divider";
 import Stack from "@mui/material/Stack";
 import { DraggablePositionCards } from "./DraggablePositionCards";
 import { RunesOrder } from "./RunesOrder";
-import { ThemeScheme } from "./state";
 
-export function Theme({ theme }: { theme: ThemeScheme }) {
+export function Theme({ theme }: { theme: string }) {
   return (
     <Stack>
-      <RunesOrder theme={theme.name} />
+      <RunesOrder theme={theme} />
       <Divider orientation="horizontal" flexItem sx={{ mt: 2, mb: 2 }} />
-      <DraggablePositionCards theme={theme.name} />
+      <DraggablePositionCards theme={theme} />
     </Stack>
   );
 }

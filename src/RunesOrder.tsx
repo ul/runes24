@@ -1,9 +1,9 @@
 import React, { useCallback } from "react";
-import { useAtom } from "jotai";
+import { useAtom } from "./atom";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import Stack from "@mui/material/Stack";
 import { Token } from "./Token";
-import { Rune, themeOrder } from "./state";
+import { Rune, setThemeOrder, themeOrder } from "./state";
 
 function reorder<T>(list: T[], startIndex: number, endIndex: number): T[] {
   const result = Array.from(list);
@@ -21,16 +21,17 @@ export function RunesOrder({
   runes?: Rune[];
   onClick?: (rune: Rune) => void;
 }) {
-  const [order, setOrder] = useAtom(themeOrder(theme));
+  const order = useAtom(themeOrder(theme));
   const orderedRunes = runes || order;
   const onDragEnd = useCallback(
     (result) => {
       if (!result.destination) return;
-      setOrder(
+      setThemeOrder(
+        theme,
         reorder(orderedRunes, result.source.index, result.destination.index)
       );
     },
-    [orderedRunes, setOrder]
+    [orderedRunes, theme]
   );
   return (
     <DragDropContext onDragEnd={onDragEnd}>

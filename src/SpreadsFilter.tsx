@@ -1,5 +1,5 @@
 import React from "react";
-import { useAtom } from "jotai";
+import { useAtom } from "./atom";
 import Autocomplete from "@mui/material/Autocomplete";
 import DatePicker from "@mui/lab/DatePicker";
 import FormControl from "@mui/material/FormControl";
@@ -8,18 +8,18 @@ import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import TextField from "@mui/material/TextField";
 import Stack from "@mui/material/Stack";
-import { filters, Futhark, querents, Rune, themes } from "./state";
+import { filters, Futhark, querents, Rune, themeNames } from "./state";
 
 export function SpreadsFilter() {
-  const [f, setFilters] = useAtom(filters);
-  const [allQuerents] = useAtom(querents);
-  const [allThemes] = useAtom(themes);
+  const f = useAtom(filters);
+  const allQuerents = useAtom(querents);
+  const allThemes = useAtom(themeNames);
   return (
     <Stack direction="row" spacing={2}>
       <Autocomplete
         options={allQuerents}
         onChange={(_, value) => {
-          setFilters({
+          filters.reset({
             ...f,
             querent: typeof value === "string" ? value : value?.label ?? "",
           });
@@ -35,7 +35,7 @@ export function SpreadsFilter() {
         label="Title"
         sx={{ flex: 3 }}
         value={f.title}
-        onChange={(e) => setFilters({ ...f, title: e.target.value })}
+        onChange={(e) => filters.reset({ ...f, title: e.target.value })}
       />
       <DatePicker
         label="From"
@@ -43,7 +43,7 @@ export function SpreadsFilter() {
         mask="__/__/__"
         value={f.fromDate}
         onChange={(date) => {
-          setFilters({ ...f, fromDate: date?.valueOf() ?? null });
+          filters.reset({ ...f, fromDate: date?.valueOf() ?? null });
         }}
         renderInput={(params) => (
           <TextField variant="standard" sx={{ flex: 2 }} {...params} />
@@ -55,7 +55,7 @@ export function SpreadsFilter() {
         mask="__/__/__"
         value={f.toDate}
         onChange={(date) => {
-          setFilters({ ...f, toDate: date?.valueOf() ?? null });
+          filters.reset({ ...f, toDate: date?.valueOf() ?? null });
         }}
         renderInput={(params) => (
           <TextField variant="standard" sx={{ flex: 2 }} {...params} />
@@ -68,12 +68,12 @@ export function SpreadsFilter() {
           labelId="theme-select-label"
           label="Theme"
           onChange={(e) => {
-            setFilters({ ...f, theme: e.target.value });
+            filters.reset({ ...f, theme: e.target.value });
           }}
         >
           <MenuItem value="">None</MenuItem>
           <MenuItem value="AllRunes">All Runes</MenuItem>
-          {allThemes.map(({ name }) => (
+          {allThemes.map((name) => (
             <MenuItem key={name} value={name}>
               {name}
             </MenuItem>
@@ -87,7 +87,7 @@ export function SpreadsFilter() {
           labelId="position-select-label"
           label="Position"
           onChange={(e) => {
-            setFilters({ ...f, position: e.target.value as Rune | null });
+            filters.reset({ ...f, position: e.target.value as Rune | null });
           }}
         >
           <MenuItem value="">None</MenuItem>
@@ -105,7 +105,7 @@ export function SpreadsFilter() {
           labelId="meaning-select-label"
           label="Meaning"
           onChange={(e) => {
-            setFilters({ ...f, meaning: e.target.value as Rune | null });
+            filters.reset({ ...f, meaning: e.target.value as Rune | null });
           }}
         >
           <MenuItem value="">None</MenuItem>

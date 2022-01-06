@@ -1,5 +1,5 @@
-import { useAtom } from "jotai";
 import React, { memo } from "react";
+import { useAtom } from "./atom";
 import {
   currentCircle,
   Futhark,
@@ -41,7 +41,7 @@ const RuneLink = memo(function RuneLink({
 });
 
 export function RuneLinks() {
-  const [circle] = useAtom(currentCircle);
+  const circle = useAtom(currentCircle);
   return (
     <g>
       {circle?.map(({ position, meaning }) => (

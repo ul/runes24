@@ -1,9 +1,9 @@
 import debounce from "lodash/debounce";
-import { atom } from "jotai";
-import { atomFamily } from "jotai/utils";
-import { shallowEqualArrays } from "shallow-equal";
+import mapValues from "lodash/mapValues";
+import { atom, atom, Atom, deatomize, subscribe, atomFamily } from "./atom";
 import { invoke } from "@tauri-apps/api/tauri";
 import defaultThemes from "./themes.json";
+import { atomicSpreads } from "./from-redux";
 
 export type Point = [number, number];
 
@@ -58,13 +58,15 @@ export interface ThemeScheme {
   runes: Rune[];
 }
 
+export type Descriptions = Record<string, Record<Rune, any>>;
+
 // Keep it and all dependencies JSON-serializable,
 // no fancy stuff like Sets etc.
 export interface PersistentState {
   version: number;
   spreads: Record<string, Spread>;
   themes: ThemeScheme[];
-  descriptions: Record<string, Record<Rune, any>>;
+  descriptions: Descriptions;
 }
 
 export enum Screen {
@@ -93,230 +95,220 @@ export interface Filters {
   meaning: Rune | null;
 }
 
-const initialState: PersistentState = {
-  version: 1,
-  spreads: {},
-  themes: defaultThemes as ThemeScheme[],
-  descriptions: {},
-};
-const persistentStateRaw = atom<PersistentState>(initialState);
+export type AtomicDescriptions = Record<string, Atom<Record<Rune, any>>>;
 
-persistentStateRaw.onMount = (set) => {
-  (async () => {
-    const initialState = JSON.parse(await invoke("get_initial_state", {}));
-    if (initialState) {
-      set(initialState);
-    }
-  })();
-};
+export interface AtomicSpread {
+  id: string;
+  date: number;
+  title: string;
+  querent: string;
+  circle: Atom<Chain>;
+  rx: Atom<Array<Rune>>;
+  chainPins: Atom<Array<Rune>>;
+  locked: boolean;
+  order: Atom<Record<string, Rune[]>>;
+  readings: Atom<AtomicDescriptions>;
+}
 
-const saveState = debounce(
-  (data) => invoke("set_state", { data: JSON.stringify(data) }),
-  250
+export const spreads = atom<Record<string, Atom<AtomicSpread>>>({});
+export const themes = atom<Atom<ThemeScheme>[]>(
+  defaultThemes.map((x) => atom(x)) as Atom<ThemeScheme>[]
+);
+export const descriptions = atom<AtomicDescriptions>({});
+
+export const themeNames = atom(() =>
+  themes.deref().map((theme) => theme.deref().name)
 );
 
-export const persistentState = atom<PersistentState, PersistentState>(
-  (get) => get(persistentStateRaw),
-  (_get, set, data) => {
-    set(persistentStateRaw, data);
-    saveState(data);
+const persistentState: Atom<PersistentState> = atom<PersistentState>(() => {
+  return deatomize({
+    version: 1,
+    spreads,
+    themes,
+    descriptions,
+  });
+});
+
+(async () => {
+  spreads.reset(atomicSpreads({ Futhark }));
+  return;
+  const initialState: PersistentState | void = JSON.parse(
+    await invoke("get_initial_state", {})
+  );
+  if (initialState) {
+    spreads.reset(
+      mapValues(initialState.spreads, (spread) =>
+        atom({
+          ...spread,
+          circle: atom(spread.circle),
+          rx: atom(spread.rx),
+          chainPins: atom(spread.chainPins),
+          order: atom(spread.order),
+          readings: atom(mapValues(spread.readings, atom)),
+        })
+      )
+    );
+    themes.reset(initialState.themes.map((x) => atom(x)));
+    descriptions.reset(mapValues(initialState.descriptions, atom));
   }
-);
+})();
 
-export const descriptions = atom<
-  Record<string, Record<Rune, any>>,
-  Record<string, Record<Rune, any>>
->(
-  (get) => get(persistentState).descriptions,
-  (get, set, descriptions) => {
-    const state = get(persistentState);
-    set(persistentState, { ...state, descriptions });
-  }
-);
+const savePersistentState = debounce(() => {
+  console.log('"saved" state');
+  return;
+  invoke("set_state", { data: JSON.stringify(persistentState.deref()) });
+}, 500);
+
+subscribe(savePersistentState);
 
 export const themeDescription = atomFamily(
-  ([theme, position]: [string, RuneOrSum]) =>
-    atom<any, any>(
-      (get) => {
-        const t = get(descriptions)[theme];
-        return t && t[position as Rune];
-      },
-      (get, set, newDescription) => {
-        const currentDescription = get(descriptions);
-        const t = currentDescription[theme] || {};
-        set(descriptions, {
-          ...currentDescription,
-          [theme]: { ...t, [position]: newDescription },
-        });
-      }
-    ),
-  shallowEqualArrays
+  (theme: string, position: Rune) =>
+    descriptions.deref()[theme]?.deref()[position]
 );
 
-export const createSpread = atom<null, string>(null, (get, set, id) => {
-  const state = get(persistentState);
-  const spreads: Record<string, Spread> = {
-    ...state.spreads,
-    [id]: {
-      id,
-      date: Date.now(),
-      title: "",
-      querent: "",
-      circle: [],
-      rx: [],
-      chainPins: [],
-      locked: false,
-      order: { AllRunes: [...Futhark] },
-      readings: {},
-    },
-  };
-  set(persistentState, { ...state, spreads });
-});
-
-export const deleteSpread = atom<null, string>(null, (get, set, id) => {
-  const state = get(persistentState);
-  const { [id]: _, ...spreads } = state.spreads;
-  set(persistentState, { ...state, spreads });
-});
-
-export const themes = atom<ThemeScheme[], ThemeScheme[]>(
-  (get) => get(persistentState).themes,
-  (get, set, themes) => {
-    const state = get(persistentState);
-    set(persistentState, { ...state, themes });
+export function setThemeDescription(theme: string, position: Rune, json: any) {
+  const t = descriptions.deref()[theme];
+  if (t) {
+    t.swap((theme) => ({ ...theme, [position]: json }));
+  } else {
+    descriptions.swap(
+      (readings) =>
+        ({
+          ...readings,
+          [theme]: atom({ [position]: json }),
+        } as AtomicDescriptions)
+    );
   }
-);
+}
+
+export function createSpread(id: string) {
+  const spread = atom<AtomicSpread>({
+    id,
+    date: Date.now(),
+    title: "",
+    querent: "",
+    circle: atom([]),
+    rx: atom([]),
+    chainPins: atom([]),
+    locked: false,
+    order: atom({ AllRunes: [...Futhark] }),
+    readings: atom({}),
+  });
+  spreads.swap((spreads) => ({ ...spreads, [id]: spread }));
+}
+
+export function deleteSpread(id: string) {
+  spreads.swap(({ [id]: _, ...spreads }) => spreads);
+}
 
 export const route = atom<Route>({ screen: Screen.SpreadsList });
 
-export const querents = atom<Array<{ label: string }>>((get) => {
-  const state = get(persistentState);
+export const querents = atom<Array<{ label: string }>>(() => {
   return Array.from(
-    new Set(Object.values(state.spreads).map((s) => s.querent))
+    new Set(Object.values(spreads.deref()).map((s) => s.deref().querent))
   ).map((label) => ({ label }));
 });
 
 export const byChains = atom<boolean>(false);
 
-export const currentSpreadId = atom<string | void>((get) => {
-  let r = get(route);
+export const currentSpreadId = atom<string | void>(() => {
+  let r = route.deref();
   return r.screen === Screen.EditSpread ? r.spreadId : undefined;
 });
 
-export const currentSpread = atom<Spread | null, Spread>(
-  (get) => {
-    const { spreads } = get(persistentState);
-    const id = get(currentSpreadId);
-    return id ? spreads[id] : null;
-  },
-  (get, set, spread) => {
-    const state = get(persistentState);
-    set(persistentState, {
-      ...state,
-      spreads: { ...state.spreads, [spread.id]: spread },
-    });
+export const currentSpread = atom<AtomicSpread | void>(() => {
+  const id = currentSpreadId.deref();
+  return id ? spreads.deref()[id]?.deref() : undefined;
+});
+
+export function updateCurrentSpread(f: (x: AtomicSpread) => AtomicSpread) {
+  const id = currentSpreadId.deref();
+  if (!id) return;
+  const spread = spreads.deref()[id];
+  if (!spread) return;
+  spread.swap(f);
+}
+
+export const currentCircle = atom(() => currentSpread.deref()?.circle.deref());
+
+export const currentReadings = atom(() => currentSpread.deref()?.readings);
+
+export const currentRX = atom(() => currentSpread.deref()?.rx);
+
+export const currentChainPins = atom(() => currentSpread.deref()?.chainPins);
+
+export const currentOrder = atom(() => currentSpread.deref()?.order);
+
+export const currentSpreadLocked = atom(() => !!currentSpread.deref()?.locked);
+
+export const themeReading = atomFamily((theme: string, position: Rune) => {
+  const t = currentReadings.deref()?.deref()[theme];
+  return t && t.deref()[position];
+});
+
+export function setThemeReading(theme: string, position: Rune, json: any) {
+  const t = currentReadings.deref()?.deref()[theme];
+  if (t) {
+    t.swap((theme) => ({ ...theme, [position]: json }));
+  } else {
+    currentReadings.deref()?.swap(
+      (readings) =>
+        ({
+          ...readings,
+          [theme]: atom({ [position]: json }),
+        } as AtomicDescriptions)
+    );
   }
-);
+}
 
-export const currentCircle = atom<Chain | void>(
-  (get) => get(currentSpread)?.circle
-);
+export const themeOrder = atomFamily((theme: string) => {
+  return (
+    currentOrder.deref()?.deref()[theme] ||
+    themes
+      .deref()
+      .find((t) => t.deref().name === theme)
+      ?.deref().runes ||
+    []
+  );
+});
 
-export const slotByPosition = atomFamily((position: RuneOrSum) =>
-  atom<Slot | void>((get) =>
-    position === "∑"
-      ? { position: "∑", meaning: "=" }
-      : get(currentCircle)?.find((s) => s.position === position)
-  )
+export function setThemeOrder(theme: string, newOrder: Rune[]) {
+  currentOrder.deref()?.swap((order) => ({ ...order, [theme]: newOrder }));
+}
+
+export const slotByPosition = atomFamily((position: Rune) =>
+  currentCircle.deref()?.find((s) => s.position === position)
 );
 
 export const slotByMeaning = atomFamily((meaning: Rune) =>
-  atom<Slot | void>((get) =>
-    get(currentCircle)?.find((s) => s.meaning === meaning)
-  )
+  currentCircle.deref()?.find((s) => s.meaning === meaning)
 );
 
-export const resetOrder = atom<null, null>(null, (get, set) => {
-  const spread = get(currentSpread);
-  if (!spread) return;
-  set(currentSpread, {
-    ...spread,
-    order: { ...spread.order, AllRunes: [...Futhark] },
-  });
-});
+export function resetOrder() {
+  currentOrder.deref()?.swap((order) => ({ ...order, AllRunes: [...Futhark] }));
+}
 
-export const readings = atom<
-  Record<string, Record<Rune, any>>,
-  Record<string, Record<Rune, any>>
->(
-  (get) => get(currentSpread)?.readings || {},
-  (get, set, readings) => {
-    const spread = get(currentSpread);
-    if (!spread) return;
-    set(currentSpread, { ...spread, readings });
-  }
-);
+export function straightenFreeRunes() {
+  const runesInCircle = new Set(currentCircle.deref()?.map((s) => s.meaning));
+  currentRX.deref()?.swap((rx) => rx.filter((rune) => runesInCircle.has(rune)));
+}
 
-export const themeReading = atomFamily(
-  ([theme, position]: [string, RuneOrSum]) =>
-    atom<any, any>(
-      (get) => {
-        const t = get(readings)[theme];
-        return t && t[position as Rune];
-      },
-      (get, set, newReading) => {
-        const currentReadings = get(readings);
-        const t = currentReadings[theme] || {};
-        set(readings, {
-          ...currentReadings,
-          [theme]: { ...t, [position]: newReading },
-        });
-      }
-    ),
-  shallowEqualArrays
-);
+export const currentChain = atom<number | void>(undefined);
+export const temporaryPin = atom<Rune | void>(undefined);
 
-export const straightenFreeRunes = atom<null, null>(null, (get, set) => {
-  const spread = get(currentSpread);
-  if (!spread) return;
-  const runesInCircle = new Set(spread.circle.map((s) => s.meaning));
-  set(currentSpread, {
-    ...spread,
-    rx: spread.rx.filter((rune) => runesInCircle.has(rune)),
-  });
-});
-
-export const pinCurrentChain = atom<null, Rune>(null, (get, set, newPin) => {
-  const chainIdx = get(currentChain);
-  if (typeof chainIdx === "undefined") return;
-  const spread = get(currentSpread);
-  if (!spread) return;
-  const allChains = get(chains);
-  const chain = allChains[chainIdx];
-  const positions = new Set(chain.map((s) => s.position));
-  set(currentSpread, {
-    ...spread,
-    chainPins: [
-      ...spread.chainPins.filter((rune) => !positions.has(rune)),
-      newPin,
-    ],
-  });
-});
-
-export const chains = atom<Chain[]>((get) => {
+export const currentChains = atom(() => {
   const result: Chain[] = [];
-  const spread = get(currentSpread);
-  if (!spread) return result;
   const visited = new Set<Rune>();
   for (const rune of Futhark) {
     let position = rune;
     const chain = [];
     while (!visited.has(position)) {
       visited.add(position);
-      const slot = spread.circle.find((s) => s.position === position);
+      const slot = slotByPosition(position).deref();
       if (slot) {
-        chain.push(slot);
-        position = slot.meaning as Rune;
+        const s = deatomize(slot);
+        chain.push(s);
+        position = s.meaning;
       }
     }
     if (chain.length > 0) {
@@ -326,19 +318,33 @@ export const chains = atom<Chain[]>((get) => {
   return result.sort((a, b) => b.length - a.length);
 });
 
-export const temporaryPin = atom<Rune | void>(undefined);
+export function pinCurrentChain(newPin: Rune) {
+  const chainIdx = currentChain.deref();
+  if (typeof chainIdx === "undefined") return;
+  const spread = currentSpread.deref();
+  if (!spread) return;
+  const allChains = currentChains.deref();
+  const chain = allChains[chainIdx];
+  const positions = new Set(chain.map((s) => s.position));
+  currentChainPins
+    .deref()
+    ?.swap((chainPins) => [
+      ...chainPins.filter((rune) => !positions.has(rune)),
+      newPin,
+    ]);
+}
 
-export const pinnedChains = atom<Chain[]>((get) => {
-  const spread = get(currentSpread);
-  const allChains = get(chains);
-  const tempPin = get(temporaryPin);
+export const pinnedChains = atom<Chain[]>(() => {
+  const chainPins = currentChainPins.deref()?.deref();
+  const allChains = currentChains.deref();
+  const tempPin = temporaryPin.deref();
   const result = [];
   for (const slots of allChains) {
     const runes = slots.map((s) => s.position);
     const positions = new Set(runes);
     const pin =
       (tempPin && positions.has(tempPin) && tempPin) ||
-      spread?.chainPins.find((p) => positions.has(p)) ||
+      chainPins?.find((p) => positions.has(p)) ||
       runes[0];
     const offset = pin ? slots.findIndex((s) => s.position === pin) : 0;
     const pinnedChain = [];
@@ -350,10 +356,8 @@ export const pinnedChains = atom<Chain[]>((get) => {
   return result;
 });
 
-export const currentChain = atom<number | void>(undefined);
-
-export const runeColors = atom<Record<RuneOrSum, string>>((get) => {
-  const allChains = get(chains);
+export const runeColors = atom<Record<Rune, string>>(() => {
+  const allChains = currentChains.deref();
   const n = allChains.length;
   const result = {} as Record<RuneOrSum, string>;
   allChains.forEach((chain, i) => {
@@ -366,12 +370,12 @@ export const runeColors = atom<Record<RuneOrSum, string>>((get) => {
   return result;
 });
 
-export const runeColor = atomFamily((position: RuneOrSum) =>
-  atom<string | void>((get) => get(runeColors)[position])
+export const runeColor = atomFamily(
+  (position: Rune) => runeColors.deref()[position]
 );
 
-export const runeChains = atom<Record<Rune, number>>((get) => {
-  const allChains = get(chains);
+export const runeChains = atom<Record<Rune, number>>(() => {
+  const allChains = currentChains.deref();
   const result = {} as Record<Rune, number>;
   allChains.forEach((chain, i) => {
     for (const { position } of chain) {
@@ -381,64 +385,26 @@ export const runeChains = atom<Record<Rune, number>>((get) => {
   return result;
 });
 
-export const currentRX = atom<Rune[] | void>((get) => get(currentSpread)?.rx);
-
-export const isReversedByPosition = atomFamily((position: RuneOrSum) =>
-  atom<boolean>((get) => {
-    if (position === "∑") return false;
-    const meaning = get(slotByPosition(position))?.meaning;
-    return !!(meaning && get(currentRX)?.includes(meaning as Rune));
-  })
-);
-
-export const isReversedByMeaning = atomFamily((meaning: Rune) =>
-  atom<boolean>((get) => {
-    return !!get(currentRX)?.includes(meaning);
-  })
-);
-
-export const reverseRune = atom<null, Rune>(null, (get, set, rune) => {
-  const spread = get(currentSpread);
-  if (spread) {
-    if (spread.rx.includes(rune)) {
-      set(currentSpread, {
-        ...spread,
-        rx: spread.rx.filter((x) => x !== rune),
-      });
-    } else {
-      set(currentSpread, { ...spread, rx: [...spread.rx, rune] });
-    }
-  }
+export const isReversedByPosition = atomFamily((position: Rune) => {
+  const meaning = slotByPosition(position).deref()?.meaning;
+  const rxAtom = currentRX.deref();
+  const rx = rxAtom && deatomize(rxAtom);
+  return !!(meaning && rx?.includes(meaning));
 });
 
-export const currentOrder = atom((get) => get(currentSpread)?.order);
+export const isReversedByMeaning = atomFamily((meaning: Rune) => {
+  const rxAtom = currentRX.deref();
+  const rx = rxAtom && deatomize(rxAtom);
+  return !!rx?.includes(meaning);
+});
 
-export const currentSpreadLocked = atom<boolean>(
-  (get) => !!get(currentSpread)?.locked
-);
-
-// TODO More precise ThemeName type?
-export const themeOrder = atomFamily((theme: string) =>
-  atom<Rune[], Rune[]>(
-    (get) => {
-      const order = get(currentOrder);
-      return (
-        (order && order[theme]) ||
-        get(themes).find((t) => t.name === theme)?.runes ||
-        []
-      );
-    },
-    (get, set, newThemeOrder) => {
-      const spread = get(currentSpread);
-      if (!spread) return;
-      const order = {
-        ...spread.order,
-        [theme]: newThemeOrder,
-      };
-      set(currentSpread, { ...spread, order });
-    }
-  )
-);
+export function reverseRune(rune: Rune) {
+  currentRX
+    .deref()
+    ?.swap((rx) =>
+      rx.includes(rune) ? rx.filter((x) => x !== rune) : [...rx, rune]
+    );
+}
 
 export const filters = atom<Filters>({
   title: "",
@@ -450,50 +416,51 @@ export const filters = atom<Filters>({
   meaning: null,
 });
 
+export const filteredSpreads = atom(() => {
+  const f = filters.deref();
+  return Object.values(spreads.deref())
+    .map((s) => s.deref())
+    .filter((s) => {
+      if (
+        f.title !== "" &&
+        !s.title.toLowerCase().includes(f.title.toLowerCase())
+      )
+        return false;
+      if (f.fromDate !== null && s.date < f.fromDate) return false;
+      if (f.toDate !== null && s.date > f.toDate) return false;
+      if (
+        f.querent !== "" &&
+        !s.querent.toLowerCase().includes(f.querent.toLowerCase())
+      )
+        return false;
+      if (
+        f.theme &&
+        !Object.values(s.readings.deref()[f.theme] || {}).some(
+          (x) => x && JSON.stringify(x) !== emptyDoc
+        )
+      )
+        return false;
+      if (f.position && f.meaning) {
+        return s.circle
+          .deref()
+          .some((x) => x.position === f.position && x.meaning === f.meaning);
+      }
+      return true;
+    });
+});
+
 const emptyDoc = JSON.stringify({
   type: "doc",
   content: [{ type: "paragraph" }],
-});
-
-export const filteredSpreads = atom<Spread[]>((get) => {
-  const { spreads } = get(persistentState);
-  const f = get(filters);
-  return Object.values(spreads).filter((s) => {
-    if (
-      f.title !== "" &&
-      !s.title.toLowerCase().includes(f.title.toLowerCase())
-    )
-      return false;
-    if (f.fromDate !== null && s.date < f.fromDate) return false;
-    if (f.toDate !== null && s.date > f.toDate) return false;
-    if (
-      f.querent !== "" &&
-      !s.querent.toLowerCase().includes(f.querent.toLowerCase())
-    )
-      return false;
-    if (
-      f.theme &&
-      !Object.values(s.readings[f.theme] || {}).some(
-        (x) => x && JSON.stringify(x) !== emptyDoc
-      )
-    )
-      return false;
-    if (f.position && f.meaning) {
-      return s.circle.some(
-        (x) => x.position === f.position && x.meaning === f.meaning
-      );
-    }
-    return true;
-  });
 });
 
 export const canvasSize = atom<number>(600);
 export const canvasFactor = 250.0;
 export const canvasCenter = [0.5 * canvasFactor, 0.5 * canvasFactor];
 export const canvasScale = atom<number>(
-  (get) => get(canvasSize) / canvasFactor
+  () => canvasSize.deref() / canvasFactor
 );
-export const movingRune = atom<Rune | undefined>(undefined);
+export const movingRune = atom<Rune | void>(undefined);
 export const movingRuneCoords = atom<Point>([0, 0]);
 
 function linearSpace(start: number, stop: number, n: number): number[] {
@@ -606,31 +573,29 @@ function distance(p1: Point, p2: Point): number {
   return Math.sqrt(a * a + b * b);
 }
 
-export const snapMovingRune = atom<null, Point>(null, (get, set, p) => {
-  set(movingRuneCoords, p);
-  const spread = get(currentSpread);
-  const meaning = get(movingRune);
-  if (!spread || !meaning) return;
+export function snapMovingRune(p: Point) {
+  movingRuneCoords.reset(p);
+  const circle = currentCircle.deref();
+  const meaning = movingRune.deref();
+  if (!circle || !meaning) return;
   const [pp, n] = nearestPoint(p);
   const isClose = distance(p, pp) < meaningRuneSize;
   if (isClose) {
     const position = Futhark[n];
-    const slot = spread.circle.find((x) => x.position === position);
+    const slot = circle.find((x) => x.position === position);
     if (!slot) {
-      set(currentSpread, {
-        ...spread,
-        circle: [
-          ...spread.circle.filter((x) => x.meaning !== meaning),
+      currentSpread
+        .deref()
+        ?.circle.swap((circle) => [
+          ...circle.filter((x) => x.meaning !== meaning),
           { position, meaning },
-        ],
-      });
+        ]);
     }
   } else {
-    if (spread.circle.find((x) => x.meaning === meaning)) {
-      set(currentSpread, {
-        ...spread,
-        circle: spread.circle.filter((x) => x.meaning !== meaning),
-      });
+    if (circle.find((x) => x.meaning === meaning)) {
+      currentSpread
+        .deref()
+        ?.circle.swap((circle) => circle.filter((x) => x.meaning !== meaning));
     }
   }
-});
+}

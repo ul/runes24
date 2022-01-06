@@ -1,8 +1,7 @@
 import React from "react";
 import { SpreadsFilter } from "./SpreadsFilter";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
-import { useAtom } from "jotai";
-import { useUpdateAtom } from "jotai/utils";
+import { useAtom } from "./atom";
 import { filteredSpreads, route, Screen } from "./state";
 import dayjs from "dayjs";
 import Stack from "@mui/material/Stack";
@@ -28,8 +27,7 @@ const columns: GridColDef[] = [
 ];
 
 export function SpreadsList() {
-  const [rows] = useAtom(filteredSpreads);
-  const setRoute = useUpdateAtom(route);
+  const rows = useAtom(filteredSpreads);
   return (
     <Stack spacing={1} flex={1} p={1}>
       <SpreadsFilter />
@@ -38,7 +36,7 @@ export function SpreadsList() {
         columns={columns}
         autoPageSize
         onRowClick={({ id }) => {
-          setRoute({ screen: Screen.EditSpread, spreadId: id as string });
+          route.reset({ screen: Screen.EditSpread, spreadId: id as string });
         }}
       />
     </Stack>

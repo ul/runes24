@@ -1,10 +1,10 @@
 import React, { Fragment, useCallback } from "react";
-import { useAtom } from "jotai";
+import { useAtom } from "./atom";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import Stack from "@mui/material/Stack";
 import { Token } from "./Token";
 import { PositionCard } from "./PositionCard";
-import { Rune, themeOrder } from "./state";
+import { Rune, themeOrder, setThemeOrder } from "./state";
 
 function reorder<T>(list: T[], startIndex: number, endIndex: number): T[] {
   const result = Array.from(list);
@@ -22,16 +22,17 @@ export function DraggablePositionCards({
   runes?: Rune[];
   noSum?: boolean;
 }) {
-  const [order, setOrder] = useAtom(themeOrder(theme));
+  const order = useAtom(themeOrder(theme));
   const orderedRunes = runes || order;
   const onDragEnd = useCallback(
     (result) => {
       if (!result.destination) return;
-      setOrder(
+      setThemeOrder(
+        theme,
         reorder(orderedRunes, result.source.index, result.destination.index)
       );
     },
-    [orderedRunes, setOrder]
+    [orderedRunes, theme]
   );
   return (
     <Stack>

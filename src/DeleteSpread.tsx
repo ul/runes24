@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import { useAtom } from "jotai";
-import { useUpdateAtom } from "jotai/utils";
+import { useAtom } from "./atom";
 import Stack from "@mui/material/Stack";
 import DeleteIcon from "@mui/icons-material/Delete";
 import Button from "@mui/material/Button";
@@ -14,9 +13,7 @@ import { currentSpreadId, route, Screen, deleteSpread } from "./state";
 
 export function DeleteSpread() {
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
-  const [spreadId] = useAtom(currentSpreadId);
-  const [_, setRoute] = useAtom(route);
-  const doDeleteSpread = useUpdateAtom(deleteSpread);
+  const spreadId = useAtom(currentSpreadId);
   if (!spreadId) return null;
   return (
     <>
@@ -53,8 +50,8 @@ export function DeleteSpread() {
             color="secondary"
             onClick={() => {
               setDeleteConfirmationOpen(false);
-              setRoute({ screen: Screen.SpreadsList });
-              doDeleteSpread(spreadId);
+              route.reset({ screen: Screen.SpreadsList });
+              deleteSpread(spreadId);
             }}
             autoFocus
           >
