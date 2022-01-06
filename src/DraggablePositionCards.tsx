@@ -16,9 +16,11 @@ function reorder<T>(list: T[], startIndex: number, endIndex: number): T[] {
 export function DraggablePositionCards({
   theme,
   runes,
+  noSum,
 }: {
   theme: string;
   runes?: Rune[];
+  noSum?: boolean;
 }) {
   const [order, setOrder] = useAtom(themeOrder(theme));
   const orderedRunes = runes || order;
@@ -70,10 +72,12 @@ export function DraggablePositionCards({
           )}
         </Droppable>
       </DragDropContext>
-      <Stack direction="row" spacing={1}>
-        <Token position={"∑"} noColor />
-        <PositionCard position={"∑"} theme={theme} />
-      </Stack>
+      {noSum ? null : (
+        <Stack direction="row" spacing={1}>
+          <Token position={"∑"} noColor />
+          <PositionCard position={"∑"} theme={theme} />
+        </Stack>
+      )}
     </Stack>
   );
 }

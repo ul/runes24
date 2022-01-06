@@ -40,7 +40,7 @@ export function Chain({ chain }: { chain: number }) {
       </Stack>
       <RunesOrder runes={runes} onClick={(rune) => setTempPin(rune)} />
       <Divider orientation="horizontal" flexItem sx={{ mt: 2, mb: 1 }} />
-      <DraggablePositionCards theme="AllRunes" runes={runes} />
+      <DraggablePositionCards theme="AllRunes" runes={runes} noSum />
     </Stack>
   );
 }

@@ -25,11 +25,17 @@ export function Chains() {
       {runeGroups.map((runes, i) => (
         <RunesOrder key={i} runes={runes} onClick={() => setCurrentChain(i)} />
       ))}
-      <Divider orientation="horizontal" flexItem sx={{ mt: 2, mb: 1 }} />
-      <DraggablePositionCards
-        theme="AllRunes"
-        runes={runeGroups.flatMap((x) => x)}
-      />
+      {runeGroups.map((group, i) => (
+        <>
+          <Divider orientation="horizontal" flexItem sx={{ mt: 2, mb: 1 }} />
+          <DraggablePositionCards
+            key={i}
+            theme="AllRunes"
+            runes={group}
+            noSum
+          />
+        </>
+      ))}
     </Stack>
   );
 }
