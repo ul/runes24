@@ -39,7 +39,7 @@ export function SpreadMeta() {
         onChange={(e) => setSpread({ ...spread, title: e.target.value })}
       />
       <DatePicker
-        label="From"
+        label="Date"
         inputFormat="DD/MM/YY"
         mask="__/__/__"
         value={spread.date}

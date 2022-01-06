@@ -1,3 +1,4 @@
+import debounce from "lodash/debounce";
 import { atom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import { shallowEqualArrays } from "shallow-equal";
@@ -108,11 +109,16 @@ persistentStateRaw.onMount = (set) => {
   })();
 };
 
+const saveState = debounce(
+  (data) => invoke("set_state", { data: JSON.stringify(data) }),
+  250
+);
+
 export const persistentState = atom<PersistentState, PersistentState>(
   (get) => get(persistentStateRaw),
-  async (_get, set, data) => {
+  (_get, set, data) => {
     set(persistentStateRaw, data);
-    await invoke("set_state", { data: JSON.stringify(data) });
+    saveState(data);
   }
 );
 
