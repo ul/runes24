@@ -32,42 +32,48 @@ export function DraggablePositionCards({
     [orderedRunes, setOrder]
   );
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
-      <Droppable droppableId="PositionCards">
-        {(provided) => (
-          <Stack
-            {...provided.droppableProps}
-            ref={provided.innerRef}
-            spacing={2}
-          >
-            {orderedRunes.map((rune, index) => (
-              <Fragment key={rune}>
-                <Draggable
-                  draggableId={rune}
-                  index={index}
-                  isDragDisabled={!!runes}
-                >
-                  {(provided) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      style={provided.draggableProps.style}
-                    >
-                      <Stack direction="row" spacing={1}>
-                        <div {...provided.dragHandleProps}>
-                          <Token position={rune} noColor />
-                        </div>
-                        <PositionCard position={rune} theme={theme} />
-                      </Stack>
-                    </div>
-                  )}
-                </Draggable>
-              </Fragment>
-            ))}
-            {provided.placeholder}
-          </Stack>
-        )}
-      </Droppable>
-    </DragDropContext>
+    <Stack>
+      <DragDropContext onDragEnd={onDragEnd}>
+        <Droppable droppableId="PositionCards">
+          {(provided) => (
+            <Stack
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+              spacing={2}
+            >
+              {orderedRunes.map((rune, index) => (
+                <Fragment key={rune}>
+                  <Draggable
+                    draggableId={rune}
+                    index={index}
+                    isDragDisabled={!!runes}
+                  >
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        style={provided.draggableProps.style}
+                      >
+                        <Stack direction="row" spacing={1}>
+                          <div {...provided.dragHandleProps}>
+                            <Token position={rune} noColor />
+                          </div>
+                          <PositionCard position={rune} theme={theme} />
+                        </Stack>
+                      </div>
+                    )}
+                  </Draggable>
+                </Fragment>
+              ))}
+              {provided.placeholder}
+            </Stack>
+          )}
+        </Droppable>
+      </DragDropContext>
+      <Stack direction="row" spacing={1}>
+        <Token position={"∑"} noColor />
+        <PositionCard position={"∑"} theme={theme} />
+      </Stack>
+    </Stack>
   );
 }

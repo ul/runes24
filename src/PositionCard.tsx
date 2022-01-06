@@ -2,13 +2,13 @@ import React, { memo, useCallback } from "react";
 import { useAtom } from "jotai";
 import Stack from "@mui/material/Stack";
 import { TextEditor } from "./TextEditor";
-import { themeReading, Rune, themeDescription } from "./state";
+import { themeReading, themeDescription, RuneOrSum } from "./state";
 
 export const PositionCard = memo(function PositionCard({
   position,
   theme,
 }: {
-  position: Rune;
+  position: RuneOrSum;
   theme: string;
 }) {
   const [reading, setReading] = useAtom(themeReading([theme, position]));
@@ -20,11 +20,13 @@ export const PositionCard = memo(function PositionCard({
   );
   return (
     <Stack flexGrow={1}>
-      <TextEditor
-        className="text-editor-theme-description"
-        content={desc}
-        onChange={updateDesc}
-      />
+      {position !== "∑" ? (
+        <TextEditor
+          className="text-editor-theme-description"
+          content={desc}
+          onChange={updateDesc}
+        />
+      ) : null}
       <TextEditor content={reading} onChange={updateReading} />
     </Stack>
   );

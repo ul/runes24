@@ -14,6 +14,8 @@ export function Footer() {
         Сделано с
         <span style={{ padding: "0px 0.25rem", color: "#F44336" }}>♥</span>
         в&nbsp;Долине и Сиднее
+        <br />
+        <span style={{ color: "#fff" }}>(env:{process.env.NODE_ENV})</span>
       </div>
     </footer>
   );

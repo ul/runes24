@@ -1,14 +1,19 @@
 import React, { memo } from "react";
 import { useAtom } from "jotai";
 import Paper from "@mui/material/Paper";
-import { Rune, runeColor, slotByPosition, isReversedByPosition } from "./state";
+import {
+  runeColor,
+  slotByPosition,
+  isReversedByPosition,
+  RuneOrSum,
+} from "./state";
 
 export const Token = memo(function Token({
   onClick,
   position,
   noColor,
 }: {
-  position: Rune;
+  position: RuneOrSum;
   onClick?: () => void;
   noColor?: boolean;
 }) {

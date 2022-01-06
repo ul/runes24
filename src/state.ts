@@ -35,8 +35,9 @@ export const Futhark = [
 ] as const;
 
 export type Rune = typeof Futhark[number];
+export type RuneOrSum = Rune | "∑" | "=";
 
-export type Slot = { position: Rune; meaning: Rune };
+export type Slot = { position: RuneOrSum; meaning: RuneOrSum };
 export type Chain = Slot[];
 
 export interface Spread {
@@ -134,11 +135,11 @@ export const descriptions = atom<
 );
 
 export const themeDescription = atomFamily(
-  ([theme, position]: [string, Rune]) =>
+  ([theme, position]: [string, RuneOrSum]) =>
     atom<any, any>(
       (get) => {
         const t = get(descriptions)[theme];
-        return t && t[position];
+        return t && t[position as Rune];
       },
       (get, set, newDescription) => {
         const currentDescription = get(descriptions);
@@ -221,9 +222,11 @@ export const currentCircle = atom<Chain | void>(
   (get) => get(currentSpread)?.circle
 );
 
-export const slotByPosition = atomFamily((position: Rune) =>
+export const slotByPosition = atomFamily((position: RuneOrSum) =>
   atom<Slot | void>((get) =>
-    get(currentCircle)?.find((s) => s.position === position)
+    position === "∑"
+      ? { position: "∑", meaning: "=" }
+      : get(currentCircle)?.find((s) => s.position === position)
   )
 );
 
@@ -255,11 +258,11 @@ export const readings = atom<
 );
 
 export const themeReading = atomFamily(
-  ([theme, position]: [string, Rune]) =>
+  ([theme, position]: [string, RuneOrSum]) =>
     atom<any, any>(
       (get) => {
         const t = get(readings)[theme];
-        return t && t[position];
+        return t && t[position as Rune];
       },
       (get, set, newReading) => {
         const currentReadings = get(readings);
@@ -313,7 +316,7 @@ export const chains = atom<Chain[]>((get) => {
       const slot = spread.circle.find((s) => s.position === position);
       if (slot) {
         chain.push(slot);
-        position = slot.meaning;
+        position = slot.meaning as Rune;
       }
     }
     if (chain.length > 0) {
@@ -349,10 +352,10 @@ export const pinnedChains = atom<Chain[]>((get) => {
 
 export const currentChain = atom<number | void>(undefined);
 
-export const runeColors = atom<Record<Rune, string>>((get) => {
+export const runeColors = atom<Record<RuneOrSum, string>>((get) => {
   const allChains = get(chains);
   const n = allChains.length;
-  const result = {} as Record<Rune, string>;
+  const result = {} as Record<RuneOrSum, string>;
   allChains.forEach((chain, i) => {
     const hue = Math.round((360 * i + 180) / n) % 360;
     const chainColor = `hsla(${hue},100%,50%,0.25)`;
@@ -363,7 +366,7 @@ export const runeColors = atom<Record<Rune, string>>((get) => {
   return result;
 });
 
-export const runeColor = atomFamily((position: Rune) =>
+export const runeColor = atomFamily((position: RuneOrSum) =>
   atom<string | void>((get) => get(runeColors)[position])
 );
 
@@ -372,7 +375,7 @@ export const runeChains = atom<Record<Rune, number>>((get) => {
   const result = {} as Record<Rune, number>;
   allChains.forEach((chain, i) => {
     for (const { position } of chain) {
-      result[position] = i;
+      result[position as Rune] = i;
     }
   });
   return result;
@@ -380,10 +383,11 @@ export const runeChains = atom<Record<Rune, number>>((get) => {
 
 export const currentRX = atom<Rune[] | void>((get) => get(currentSpread)?.rx);
 
-export const isReversedByPosition = atomFamily((position: Rune) =>
+export const isReversedByPosition = atomFamily((position: RuneOrSum) =>
   atom<boolean>((get) => {
+    if (position === "∑") return false;
     const meaning = get(slotByPosition(position))?.meaning;
-    return !!(meaning && get(currentRX)?.includes(meaning));
+    return !!(meaning && get(currentRX)?.includes(meaning as Rune));
   })
 );
 
