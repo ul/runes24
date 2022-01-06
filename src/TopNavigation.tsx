@@ -34,7 +34,7 @@ export function TopNavigation() {
           component="div"
           sx={{ flex: 1 }}
         >
-          Runic Circle
+          Runes Circle
         </Typography>
         {currentRoute.screen !== Screen.SpreadsList ? (
           <IconButton
