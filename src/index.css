@@ -130,30 +130,9 @@ svg,
 }
 /* END SVG */
 
-.text-editor .remirror-editor-wrapper {
-  padding-top: 0;
-}
-
-.text-editor.remirror-theme .remirror-editor.ProseMirror {
-  box-shadow: none;
-  /* border-bottom: 1px solid rgba(0, 0, 0, 0.01); */
-  border-radius: 0;
-  min-height: 36px;
-  padding: 0;
-  overflow-y: auto;
-}
-
-.text-editor-theme-description.text-editor.remirror-theme
-  .remirror-editor.ProseMirror {
+.text-editor-theme-description .ProseMirror {
   font-size: 0.8rem;
   color: #c00;
-}
-
-.text-editor-toolbar.remirror-floating-popover {
-  background-color: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
-  z-index: 99999;
 }
 
 .text-editor-toolbar .text-editor-button.text-editor-red-button {
@@ -183,4 +162,11 @@ svg,
 footer a {
   color: #039be5;
   text-decoration: none;
+}
+
+.bubble-menu {
+  background-color: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 0.5rem;
+  z-index: 99999;
 }
