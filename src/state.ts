@@ -3,7 +3,6 @@ import mapValues from "lodash/mapValues";
 import { atom, atom, Atom, deatomize, subscribe, atomFamily } from "./atom";
 import { invoke } from "@tauri-apps/api/tauri";
 import defaultThemes from "./themes.json";
-import { atomicSpreads } from "./from-redux";
 
 export type Point = [number, number];
 
@@ -130,8 +129,6 @@ const persistentState: Atom<PersistentState> = atom<PersistentState>(() => {
 });
 
 (async () => {
-  spreads.reset(atomicSpreads({ Futhark }));
-  return;
   const initialState: PersistentState | void = JSON.parse(
     await invoke("get_initial_state", {})
   );
@@ -154,10 +151,8 @@ const persistentState: Atom<PersistentState> = atom<PersistentState>(() => {
 })();
 
 const savePersistentState = debounce(() => {
-  console.log('"saved" state');
-  return;
   invoke("set_state", { data: JSON.stringify(persistentState.deref()) });
-}, 500);
+}, 250);
 
 subscribe(savePersistentState);
 
