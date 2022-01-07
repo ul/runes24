@@ -1,25 +1,49 @@
 import memoize from "moize";
 import { useEffect, useMemo, useState } from "react";
-import { Adapton, AdaptonRef, force, Thunk } from "./adapton";
+import { Adapton, AdaptonRef, Thunk } from "./adapton";
 
-const globalSubscriptions: Set<() => void> = new Set();
+class Subscriptions {
+  private listeners: Set<() => void> = new Set();
+  private isNotificationScheduled = false;
 
-export function subscribe(f: () => void, subscriptions = globalSubscriptions) {
-  subscriptions.add(f);
-  return () => {
-    subscriptions.delete(f);
-  };
+  subscribe(f: () => void): () => void {
+    this.listeners.add(f);
+    return () => this.unsubscribe(f);
+  }
+
+  unsubscribe(f: () => void): void {
+    this.listeners.delete(f);
+  }
+
+  notify(): void {
+    if (this.isNotificationScheduled) return;
+    this.isNotificationScheduled = true;
+    requestAnimationFrame(() => {
+      this.isNotificationScheduled = false;
+      for (const f of this.listeners) {
+        f();
+      }
+    });
+  }
 }
+
+export const globalSubscriptions = new Subscriptions();
 
 export class Atom<T> {
   private adapton: Adapton<T>;
 
-  constructor(adapton: Adapton<T>) {
-    this.adapton = adapton;
+  constructor(thunk: Thunk<T>);
+  constructor(value: T);
+  constructor(thunkOrValue: Thunk<T> | T) {
+    if (typeof thunkOrValue === "function") {
+      this.adapton = new Adapton(thunkOrValue as Thunk<T>);
+    } else {
+      this.adapton = new AdaptonRef(thunkOrValue as T);
+    }
   }
 
   deref(): T {
-    return force(this.adapton);
+    return this.adapton.force();
   }
 
   reset(value: T) {
@@ -27,11 +51,7 @@ export class Atom<T> {
       throw new Error("Atom was created with a thunk, can't set value.");
     }
     this.adapton.set(value);
-    requestAnimationFrame(() => {
-      for (const f of globalSubscriptions) {
-        f();
-      }
-    });
+    globalSubscriptions.notify();
   }
 
   swap(f: (oldValue: T) => T) {
@@ -42,11 +62,7 @@ export class Atom<T> {
 export function atom<T>(thunk: Thunk<T>): Atom<T>;
 export function atom<T>(value: T): Atom<T>;
 export function atom<T>(thunkOrValue: Thunk<T> | T): Atom<T> {
-  if (typeof thunkOrValue === "function") {
-    return new Atom(new Adapton(thunkOrValue as Thunk<T>));
-  } else {
-    return new Atom(new AdaptonRef(thunkOrValue as T));
-  }
+  return new Atom(thunkOrValue) as Atom<T>;
 }
 
 export function atomFamily<A extends any[], T>(
@@ -80,7 +96,7 @@ export function useAtom<T>(atom: Atom<T>): T {
   // order of insertion in `subscriptions`.
   const unsubscribe = useMemo(() => {
     let prevValue = value;
-    return subscribe(() => {
+    return globalSubscriptions.subscribe(() => {
       const newValue = atom.deref();
       if (newValue !== prevValue) {
         prevValue = newValue;

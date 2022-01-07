@@ -1,5 +1,7 @@
 export type Thunk<T> = () => T;
 
+let currentlyAdapting: Adapton<any>;
+
 export class Adapton<T> {
   // This is okay as we never use initial value due to `isClean = false`
   protected result: T = undefined as unknown as T;
@@ -40,6 +42,15 @@ export class Adapton<T> {
       sup.dirty();
     }
   }
+
+  force(): T {
+    const prevAdapting = currentlyAdapting;
+    currentlyAdapting = this;
+    const result = this.compute();
+    currentlyAdapting = prevAdapting;
+    currentlyAdapting?.addDependency(this);
+    return result;
+  }
 }
 
 export class AdaptonRef<T> extends Adapton<T> {
@@ -53,15 +64,4 @@ export class AdaptonRef<T> extends Adapton<T> {
     this.result = value;
     this.dirty();
   }
-}
-
-let currentlyAdapting: Adapton<any>;
-
-export function force<T>(adapton: Adapton<T>): T {
-  const prevAdapting = currentlyAdapting;
-  currentlyAdapting = adapton;
-  const result = adapton.compute();
-  currentlyAdapting = prevAdapting;
-  currentlyAdapting?.addDependency(adapton);
-  return result;
 }

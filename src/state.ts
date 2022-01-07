@@ -1,6 +1,6 @@
 import debounce from "lodash/debounce";
 import mapValues from "lodash/mapValues";
-import { atom, atom, Atom, deatomize, subscribe, atomFamily } from "./atom";
+import { atom, Atom, deatomize, atomFamily, globalSubscriptions } from "./atom";
 import { invoke } from "@tauri-apps/api/tauri";
 import defaultThemes from "./themes.json";
 
@@ -135,18 +135,18 @@ const persistentState: Atom<PersistentState> = atom<PersistentState>(() => {
   if (initialState) {
     spreads.reset(
       mapValues(initialState.spreads, (spread) =>
-        atom({
+        atom<AtomicSpread>({
           ...spread,
           circle: atom(spread.circle),
           rx: atom(spread.rx),
           chainPins: atom(spread.chainPins),
           order: atom(spread.order),
           readings: atom(mapValues(spread.readings, atom)),
-        })
+        } as AtomicSpread)
       )
     );
     themes.reset(initialState.themes.map((x) => atom(x)));
-    descriptions.reset(mapValues(initialState.descriptions, atom));
+    descriptions.reset(mapValues(initialState.descriptions, (x) => atom(x)));
   }
 })();
 
@@ -154,7 +154,7 @@ const savePersistentState = debounce(() => {
   invoke("set_state", { data: JSON.stringify(persistentState.deref()) });
 }, 250);
 
-subscribe(savePersistentState);
+globalSubscriptions.subscribe(savePersistentState);
 
 export const themeDescription = atomFamily(
   (theme: string, position: Rune) =>
