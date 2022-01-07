@@ -103,14 +103,15 @@ export function useAtom<T>(atom: Atom<T>): T {
   // `useMemo` is called during render top-down which helps to maintain the desired
   // order of insertion in `subscriptions`.
   const unsubscribe = useMemo(() => {
-    let prevValue = value;
-    return globalSubscriptions.subscribe(() => {
-      const newValue = atom.deref();
-      if (newValue !== prevValue) {
-        prevValue = newValue;
-        setValue(newValue);
+    let previous = value;
+    const update = () => {
+      const value = atom.deref();
+      if (value !== previous) {
+        previous = value;
+        setValue(value);
       }
-    });
+    };
+    return globalSubscriptions.subscribe(update);
   }, [atom]);
   // Clean up subscription.
   useEffect(() => unsubscribe, [unsubscribe]);
