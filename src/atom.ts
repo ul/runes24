@@ -74,9 +74,10 @@ export function atom<T>(thunkOrValue: Thunk<T> | T): Atom<T> {
 }
 
 export function atomFamily<A extends any[], T>(
-  f: (...args: A) => T
+  f: (...args: A) => T,
+  memoizeOptions = { maxSize: 0x1000 }
 ): (...args: A) => Atom<T> {
-  return memoize((...args: A) => atom(() => f(...args)), { maxSize: 0x1000 });
+  return memoize((...args: A) => atom(() => f(...args)), memoizeOptions);
 }
 
 export function deatomize(object: any): any {
