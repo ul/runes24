@@ -54,7 +54,7 @@ export class Atom<T> {
     globalSubscriptions.notify();
   }
 
-  swap(f: (oldValue: T) => T) {
+  swap(f: (value: T) => T) {
     this.reset(f(this.deref()));
   }
 
