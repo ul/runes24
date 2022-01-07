@@ -3,6 +3,7 @@ import { useAtom } from "./atom";
 import { route, Screen } from "./state";
 import { SpreadsList } from "./SpreadsList";
 import { EditSpread } from "./EditSpread";
+import LinearProgress from "@mui/material/LinearProgress";
 
 export function Router() {
   const currentRoute = useAtom(route);
@@ -10,7 +11,8 @@ export function Router() {
     case Screen.EditSpread:
       return <EditSpread />;
     case Screen.SpreadsList:
-    default:
       return <SpreadsList />;
+    default:
+      return <LinearProgress />;
   }
 }

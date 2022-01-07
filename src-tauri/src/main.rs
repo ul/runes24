@@ -17,7 +17,7 @@ fn get_state_path() -> PathBuf {
     state_path
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn get_initial_state() -> Option<String> {
     let file = File::open(get_state_path()).ok()?;
     let mut rdr = snap::read::FrameDecoder::new(file);
@@ -26,7 +26,7 @@ fn get_initial_state() -> Option<String> {
     Some(string)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 fn set_state(data: String) -> Option<bool> {
     let file = File::create(get_state_path()).ok()?;
     let mut wtr = snap::write::FrameEncoder::new(file);

@@ -69,8 +69,13 @@ export interface PersistentState {
 }
 
 export enum Screen {
+  Loading,
   SpreadsList,
   EditSpread,
+}
+
+export interface Loading {
+  screen: Screen.Loading;
 }
 
 export interface SpreadsList {
@@ -82,7 +87,7 @@ export interface EditSpread {
   spreadId: string;
 }
 
-export type Route = SpreadsList | EditSpread;
+export type Route = Loading | SpreadsList | EditSpread;
 
 export interface Filters {
   title: string;
@@ -108,6 +113,8 @@ export interface AtomicSpread {
   order: Atom<Record<string, Rune[]>>;
   readings: Atom<AtomicDescriptions>;
 }
+
+export const route = atom<Route>({ screen: Screen.Loading });
 
 export const spreads = atom<Record<string, Atom<AtomicSpread>>>({});
 export const themes = atom<Atom<ThemeScheme>[]>(
@@ -148,11 +155,12 @@ const persistentState: Atom<PersistentState> = atom<PersistentState>(() => {
     themes.reset(initialState.themes.map((x) => atom(x)));
     descriptions.reset(mapValues(initialState.descriptions, (x) => atom(x)));
   }
+  route.reset({ screen: Screen.SpreadsList });
 })();
 
 const savePersistentState = debounce(() => {
   invoke("set_state", { data: JSON.stringify(persistentState.deref()) });
-}, 250);
+}, 1000);
 
 globalSubscriptions.subscribe(savePersistentState);
 
@@ -195,8 +203,6 @@ export function createSpread(id: string) {
 export function deleteSpread(id: string) {
   spreads.swap(({ [id]: _, ...spreads }) => spreads);
 }
-
-export const route = atom<Route>({ screen: Screen.SpreadsList });
 
 export const querents = atom<Array<{ label: string }>>(() => {
   return Array.from(

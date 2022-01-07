@@ -159,6 +159,22 @@ svg,
   background-color: rgba(0, 0, 255, 0.7);
 }
 
+footer {
+  font-size: 0.2rem;
+  text-align: center;
+  line-height: 1;
+}
+
+footer h6 {
+  opacity: 0.5;
+  margin: 0;
+}
+
+footer .heart {
+  padding: 0px 0.25em;
+  color: #f44336;
+}
+
 footer a {
   color: #039be5;
   text-decoration: none;
