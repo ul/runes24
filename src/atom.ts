@@ -57,6 +57,14 @@ export class Atom<T> {
   swap(f: (oldValue: T) => T) {
     this.reset(f(this.deref()));
   }
+
+  get value(): T {
+    return this.deref();
+  }
+
+  set value(x: T) {
+    this.reset(x);
+  }
 }
 
 export function atom<T>(thunk: Thunk<T>): Atom<T>;
