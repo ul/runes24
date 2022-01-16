@@ -2,7 +2,7 @@ import React from "react";
 import { SpreadsFilter } from "./SpreadsFilter";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { useAtom } from "./atom";
-import { filteredSpreads, route, Screen } from "./state";
+import { filteredSpreads, route, Screen, spreadListSort } from "./state";
 import dayjs from "dayjs";
 import Stack from "@mui/material/Stack";
 
@@ -28,6 +28,7 @@ const columns: GridColDef[] = [
 
 export function SpreadsList() {
   const rows = useAtom(filteredSpreads);
+  const sortModel = useAtom(spreadListSort);
   return (
     <Stack spacing={1} flex={1} p={1}>
       <SpreadsFilter />
@@ -35,6 +36,8 @@ export function SpreadsList() {
         rows={rows}
         columns={columns}
         autoPageSize
+        sortModel={sortModel}
+        onSortModelChange={(newModel) => spreadListSort.reset(newModel)}
         onRowClick={({ id }) => {
           route.reset({ screen: Screen.EditSpread, spreadId: id as string });
         }}

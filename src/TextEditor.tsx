@@ -108,6 +108,13 @@ const Clipboard = Extension.create({
   addKeyboardShortcuts() {
     return {
       "Mod-c": () => document.execCommand("copy"),
+      "Shift-Alt-Mod-v": () => {
+        (async () => {
+          const text = await navigator.clipboard.readText();
+          this.editor.commands.insertContent(text);
+        })();
+        return true;
+      },
       "Mod-v": () => document.execCommand("paste"),
       "Mod-x": () => document.execCommand("cut"),
     };

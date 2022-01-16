@@ -3,6 +3,7 @@ import mapValues from "lodash/mapValues";
 import { atom, Atom, deatomize, atomFamily, globalSubscriptions } from "./atom";
 import { invoke } from "@tauri-apps/api/tauri";
 import defaultThemes from "./themes.json";
+import { GridSortModel } from "@mui/x-data-grid";
 
 export type Point = [number, number];
 
@@ -586,3 +587,7 @@ export function snapMovingRune(p: Point) {
     }
   }
 }
+
+export const spreadListSort = atom<GridSortModel>([
+  { field: "date", sort: "desc" },
+]);
