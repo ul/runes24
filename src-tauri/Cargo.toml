@@ -8,13 +8,13 @@ edition = "2021"
 build = "src/build.rs"
 
 [build-dependencies]
-tauri-build = "1.0.0-beta.4"
+tauri-build = { version = "1.0.0", features = [] }
 
 [dependencies]
 dirs = "4.0.0"
-serde = { version = "1.0.132", features = [ "derive" ] }
+serde = { version = "1.0.137", features = [ "derive" ] }
 snap = "1.0.5"
-tauri = { version = "1.0.0-beta.8", features = ["api-all"] }
+tauri = { version = "1.0.0", features = ["api-all"] }
 # tauri = { git = "https://github.com/tauri-apps/tauri", branch = "next", features = ["api-all"] }
 
 [features]
@@ -24,6 +24,6 @@ custom-protocol = [ "tauri/custom-protocol" ]
 [profile.release]
 panic = "abort"
 codegen-units = 1
-lto = true
+lto = "thin"
 incremental = false
 opt-level = "s"

@@ -29,7 +29,6 @@ body {
 }
 
 .reversed {
-  -webkit-transform: rotate(180deg);
   transform: rotate(180deg);
 }
 
@@ -62,8 +61,6 @@ body {
 svg,
 .canvas,
 .no-select {
-  -webkit-user-select: none;
-  -moz-user-select: none;
   user-select: none;
 }
 
@@ -90,8 +87,6 @@ svg,
 .position-rune {
   fill: #c00;
   cursor: default;
-  -webkit-user-select: none;
-  -moz-user-select: none;
   user-select: none;
   font-size: 10px;
   cursor: pointer;
@@ -112,8 +107,6 @@ svg,
     stroke-linecap: round;
     font-weight: bold;*/
   cursor: pointer;
-  -webkit-user-select: none;
-  -moz-user-select: none;
   user-select: none;
 }
 
