@@ -1,9 +1,9 @@
 import debounce from "lodash/debounce";
 import mapValues from "lodash/mapValues";
 import { atom, Atom, deatomize, atomFamily, globalSubscriptions } from "./atom";
-import { invoke } from "@tauri-apps/api/tauri";
 import defaultThemes from "./themes.json";
 import { GridSortModel } from "@mui/x-data-grid";
+import { get, set } from "idb-keyval";
 
 export type Point = [number, number];
 
@@ -137,9 +137,7 @@ const persistentState: Atom<PersistentState> = atom<PersistentState>(() => {
 });
 
 (async () => {
-  const initialState: PersistentState | void = JSON.parse(
-    await invoke("get_initial_state", {})
-  );
+  const initialState: PersistentState | void = await get("runes24");
   if (initialState) {
     spreads.value = mapValues(initialState.spreads, (spread) =>
       atom<AtomicSpread>({
@@ -158,7 +156,7 @@ const persistentState: Atom<PersistentState> = atom<PersistentState>(() => {
 })();
 
 const savePersistentState = debounce(() => {
-  invoke("set_state", { data: JSON.stringify(persistentState.value) });
+  set("runes24", persistentState.value);
 }, 1000);
 
 globalSubscriptions.subscribe(savePersistentState);
