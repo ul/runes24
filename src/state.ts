@@ -65,7 +65,6 @@ export type Descriptions = Record<string, Record<Rune, any>>;
 export interface PersistentState {
   version: number;
   spreads: Record<string, Spread>;
-  themes: ThemeScheme[];
   descriptions: Descriptions;
 }
 
@@ -131,7 +130,6 @@ const persistentState: Atom<PersistentState> = atom<PersistentState>(() => {
   return deatomize({
     version: 1,
     spreads,
-    themes,
     descriptions,
   });
 });
@@ -149,7 +147,6 @@ const persistentState: Atom<PersistentState> = atom<PersistentState>(() => {
         readings: atom(mapValues(spread.readings, atom)),
       } as AtomicSpread)
     );
-    themes.value = initialState.themes.map((x) => atom(x));
     descriptions.value = mapValues(initialState.descriptions, (x) => atom(x));
   }
   route.value = { screen: Screen.SpreadsList };
