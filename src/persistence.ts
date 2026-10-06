@@ -1,27 +1,39 @@
 // Loading and saving `PersistentState`.
 //
-// Inside Tauri the state lives in `~/.runes24/state.json.snap` (see
-// `src-tauri/src/main.rs`); in a plain browser (handy for UI development with
-// `yarn start`) it falls back to `localStorage`.
+// The desktop app (Tauri) keeps it in `~/.runes24/state.json.snap` (see
+// `src-tauri/src/main.rs`). The web version, and `yarn start`, keep it in the
+// browser's IndexedDB under the key "runes24" of idb-keyval's default store,
+// the same place the web version has always used.
 
 import debounce from "lodash/debounce";
+import { get, set } from "idb-keyval";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { atom, Atom, globalSubscriptions } from "./atom";
 import { PersistentState } from "./model";
 
 interface Backend {
-  /** Resolves to `null` when nothing has been saved yet; rejects on errors. */
-  load(): Promise<string | null>;
-  save(data: string): Promise<void>;
-  /** `beforeExit` is awaited before the app quits. */
+  /** Resolves to `undefined` when nothing has been saved yet; rejects on
+   *  errors. The result still has to be validated. */
+  load(): Promise<unknown>;
+  save(state: PersistentState): Promise<void>;
+  /** True if the storage itself applies writes in the order `save` is
+   *  called, so a write can start before the previous one finishes. */
+  ordered: boolean;
+  /** `beforeExit` should save pending changes. */
   onExit(beforeExit: () => Promise<void>): void;
 }
 
 const tauriBackend: Backend = {
-  load: () => invoke<string | null>("get_initial_state"),
-  save: (data) => invoke<void>("set_state", { data }),
+  async load() {
+    const json = await invoke<string | null>("get_initial_state");
+    return json === null ? undefined : JSON.parse(json);
+  },
+  save: (state) => invoke<void>("set_state", { data: JSON.stringify(state) }),
+  // Async commands run on a thread pool, so they could overtake each other.
+  ordered: false,
   onExit(beforeExit) {
+    // Rust waits for `exit_app` (or a timeout) before quitting.
     listen("close-requested", async () => {
       try {
         await beforeExit();
@@ -32,13 +44,23 @@ const tauriBackend: Backend = {
   },
 };
 
-const localStorageKey = "runes24-state";
+const idbKey = "runes24";
 
 const browserBackend: Backend = {
-  load: async () => localStorage.getItem(localStorageKey),
-  save: async (data) => localStorage.setItem(localStorageKey, data),
+  load: () => get(idbKey),
+  save: (state) => set(idbKey, state),
+  // IndexedDB runs overlapping write transactions in creation order. Starting
+  // the write at once matters on page exit: one queued behind a pending
+  // write might never start.
+  ordered: true,
   onExit(beforeExit) {
-    window.addEventListener("beforeunload", () => void beforeExit());
+    // Browsers don't wait for async work on unload, so save as soon as the
+    // page is hidden (tab switch, app switch on phones, closing), which is
+    // the last reliable moment.
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") void beforeExit();
+    });
+    window.addEventListener("pagehide", () => void beforeExit());
   },
 };
 
@@ -51,7 +73,7 @@ function errorMessage(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
 
-export function loadState(): Promise<string | null> {
+export function loadState(): Promise<unknown> {
   return backend.load();
 }
 
@@ -69,10 +91,14 @@ export function startSaving(snapshot: Atom<PersistentState>) {
     const state = snapshot.value;
     if (state === lastQueued) return queue;
     lastQueued = state;
-    const data = JSON.stringify(state);
-    // Chained, so writes reach the disk in order.
+    // Writes must reach the storage in order; results are handled in order.
+    const saving = backend.ordered
+      ? backend.save(state)
+      : queue.then(() => backend.save(state));
+    // Its failure is reported below, once the queue gets to it.
+    saving.catch(() => {});
     queue = queue
-      .then(() => backend.save(data))
+      .then(() => saving)
       .then(
         () => {
           lastSaved = state;

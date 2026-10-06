@@ -1,7 +1,9 @@
 # Runes Circle
 
-A desktop app for laying out and journaling Elder Futhark rune spreads on a
-24-position circle. Built with [Tauri 2](https://tauri.app) (Rust) and React.
+An app for laying out and journaling Elder Futhark rune spreads on a
+24-position circle: a desktop app built with [Tauri 2](https://tauri.app)
+(Rust) and React, and the same app on the web at
+[runes24.mantike.pro](https://runes24.mantike.pro).
 
 For each spread you place the 24 runes onto the 24 positions of the circle,
 optionally reverse some of them, and write readings: per rune, per theme
@@ -25,6 +27,8 @@ code is put together.
 
 ## Your data
 
+### Desktop app
+
 Everything is saved to `~/.runes24/state.json.snap` (JSON, compressed with
 [Snappy framing](https://github.com/google/snappy/blob/main/framing_format.txt)),
 about a second after each change and again when the app quits or its
@@ -38,6 +42,13 @@ window closes.
 
 To back up, copy `~/.runes24`. To read the data outside the app, decompress it
 with any Snappy tool, e.g. `snzip -d -t framing2`.
+
+### Web version
+
+Spreads are kept in that browser's storage (IndexedDB) on that device only:
+they don't sync between browsers or devices, or with the desktop app. Saving
+happens about a second after each change and when the page is hidden.
+Clearing the site's data in the browser deletes them.
 
 ## Development
 
@@ -58,11 +69,18 @@ yarn dev
 | Command | What it does |
 | --- | --- |
 | `yarn dev` | Run the desktop app with hot reload. |
-| `yarn start` | Run only the web UI at http://localhost:1234. Data then goes to the browser's `localStorage` instead of `~/.runes24`. |
+| `yarn start` | Run the web version at http://localhost:1234 (data in the browser, as on the website). |
 | `yarn bundle` | Build the release app and installers into `src-tauri/target/release/bundle`. |
 | `yarn verify` | Type-check, run the tests, check formatting. CI runs the same, plus `cargo fmt --check` and `cargo clippy`. |
 | `yarn test` | Unit tests for the domain logic (Node's test runner). |
 | `yarn format` | Format the frontend with Prettier. |
+
+## Deployment
+
+- **Web:** every push to `master` builds the site and publishes it to GitHub
+  Pages (`.github/workflows/pages.yml`). The custom domain is set in the
+  repository's Pages settings.
+- **Desktop:** `yarn bundle` on each platform.
 
 ## License
 

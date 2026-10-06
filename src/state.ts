@@ -107,9 +107,9 @@ let persistence: ReturnType<typeof startSaving> | undefined;
 
 (async () => {
   try {
-    const json = await loadState();
-    if (json !== null) {
-      const state = parsePersistentState(json);
+    const saved = await loadState();
+    if (saved !== undefined) {
+      const state = parsePersistentState(saved);
       spreads.value = mapValues(state.spreads, atomizeSpread);
       descriptions.value = atomizeTexts(state.descriptions);
     }

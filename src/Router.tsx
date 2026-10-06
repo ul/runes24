@@ -1,4 +1,5 @@
 import React from "react";
+import { isTauri } from "@tauri-apps/api/core";
 import { useAtom } from "./atom";
 import Alert from "@mui/material/Alert";
 import AlertTitle from "@mui/material/AlertTitle";
@@ -20,9 +21,15 @@ export function Router() {
           <AlertTitle>Saved spreads could not be loaded</AlertTitle>
           {currentRoute.message}
           <br />
-          Nothing has been changed on disk. Fix or restore the file (a backup of
-          the previous save is kept next to it as{" "}
-          <code>state.json.snap.bak</code>) and restart the app.
+          {isTauri() ? (
+            <>
+              Nothing has been changed on disk. Fix or restore the file (a
+              backup of the previous save is kept next to it as{" "}
+              <code>state.json.snap.bak</code>) and restart the app.
+            </>
+          ) : (
+            "Nothing has been overwritten. Reload the page to try again."
+          )}
         </Alert>
       );
     default:

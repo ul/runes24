@@ -31,7 +31,7 @@ src/
   geometry.ts           SVG geometry of the circle
   adapton.ts            incremental computation core
   atom.ts               atoms on top of adapton + the useAtom React hook
-  persistence.ts        storage backends (Tauri file / localStorage), save queue
+  persistence.ts        storage backends (Tauri file / IndexedDB), save queue
   state.ts              app state as atoms, and the actions changing it
   SortableRunes.tsx     drag-to-reorder lists of runes (dnd-kit)
   SVGDraggable.tsx      dragging runes on the circle
@@ -71,14 +71,16 @@ too, but is not saved.
 
 ## Persistence
 
-1. On start `state.ts` asks `persistence.loadState()` for the saved JSON.
+1. On start `state.ts` asks `persistence.loadState()` for the saved state:
+   the snappy file through Tauri on desktop, or the object under key
+   `"runes24"` in idb-keyval's default IndexedDB store on the web.
    `parsePersistentState` validates it, fills in fields missing from older
    files and rejects newer versions.
 2. If anything fails, the app shows the `LoadError` screen and **saving is
    never started**, so an unreadable file can't be overwritten.
 3. Otherwise `startSaving` watches the derived `persistentState` atom. When it
    changes (identity again), a save is debounced by 1 s. Saves are queued so
-   they reach the disk in order.
+   they reach the storage in order.
 4. In Rust, `set_state` writes a temporary file, syncs it, copies the old file
    to `.bak` and renames the new one into place.
 5. On quit (window close button, the app menu's Quit / Cmd+Q, or the app
@@ -86,7 +88,9 @@ too, but is not saved.
    frontend flushes pending saves and calls `exit_app`. If that hasn't
    happened within 5 s, or quit is requested again, Rust quits anyway.
    macOS gets its own app menu because Tauri's default Quit item terminates
-   the app without a cancellable event.
+   the app without a cancellable event. On the web, pending changes are
+   saved when the page is hidden, since browsers don't wait for async work
+   on unload.
 
 Bump `persistentStateVersion` and extend `parsePersistentState` when the
 saved format changes incompatibly.

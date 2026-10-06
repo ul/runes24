@@ -89,7 +89,7 @@ test("date filters include whole days at both ends", () => {
 
 test("parsePersistentState fills missing fields and drops junk", () => {
   const state = parsePersistentState(
-    JSON.stringify({
+    structuredClone({
       version: 1,
       spreads: {
         a: { title: "t", circle: [slot(F, U), { position: "x" }], rx: [U, 1] },
@@ -106,10 +106,10 @@ test("parsePersistentState fills missing fields and drops junk", () => {
 });
 
 test("parsePersistentState refuses what it can't understand", () => {
-  assert.throws(() => parsePersistentState("{"), SyntaxError);
-  assert.throws(() => parsePersistentState("[]"));
+  assert.throws(() => parsePersistentState(null));
+  assert.throws(() => parsePersistentState([]));
   assert.throws(
-    () => parsePersistentState('{"version": 2}'),
+    () => parsePersistentState({ version: 2 }),
     UnsupportedVersionError,
   );
 });

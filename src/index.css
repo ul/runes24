@@ -99,6 +99,8 @@ svg,
 }
 
 .meaning-rune {
+  /* Dragged with pointer events; don't let touch scroll or zoom instead. */
+  touch-action: none;
   fill: #473928;
   font-size: 16px;
   /*stroke: #c1b08b;

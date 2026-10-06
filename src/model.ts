@@ -147,11 +147,11 @@ function normalizeSpread(id: string, raw: unknown): Spread {
 
 export class UnsupportedVersionError extends Error {}
 
-/** Validate and upgrade a loaded state. Throws if it can't be understood,
- *  so the caller never overwrites data it failed to read. */
-export function parsePersistentState(json: string): PersistentState {
-  const raw: unknown = JSON.parse(json);
-  if (!isObject(raw)) throw new Error("State file is not a JSON object.");
+/** Validate and upgrade a loaded state (parsed JSON, or the object stored in
+ *  IndexedDB). Throws if it can't be understood, so the caller never
+ *  overwrites data it failed to read. */
+export function parsePersistentState(raw: unknown): PersistentState {
+  if (!isObject(raw)) throw new Error("Saved state is not an object.");
   const version = raw.version ?? 1;
   if (version > persistentStateVersion) {
     throw new UnsupportedVersionError(
