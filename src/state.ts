@@ -1,198 +1,184 @@
-import debounce from "lodash/debounce";
+// Application state: atoms, derived atoms and the actions changing them.
+
 import mapValues from "lodash/mapValues";
-import { atom, Atom, deatomize, atomFamily, globalSubscriptions } from "./atom";
-import { invoke } from "@tauri-apps/api/tauri";
-import defaultThemes from "./themes.json";
+import { nanoid } from "nanoid";
 import { GridSortModel } from "@mui/x-data-grid";
+import { atom, Atom, deatomize, atomFamily } from "./atom";
+import {
+  AllRunes,
+  Chain,
+  chainsOf,
+  Doc,
+  Filters,
+  Futhark,
+  newSpread,
+  parsePersistentState,
+  persistentStateVersion,
+  PersistentState,
+  pinChain,
+  Rune,
+  RuneOrSum,
+  Spread,
+  spreadMatches,
+  ThemeScheme,
+  ThemeTexts,
+} from "./model";
+import { distance, meaningRuneSize, nearestPoint, Point } from "./geometry";
+import { loadState, onExit, startSaving } from "./persistence";
+import defaultThemes from "./themes.json";
 
-export type Point = [number, number];
-
-export const Futhark = [
-  "ᚠ",
-  "ᚢ",
-  "ᚦ",
-  "ᚨ",
-  "ᚱ",
-  "ᚲ",
-  "ᚷ",
-  "ᚹ",
-  "ᚺ",
-  "ᚾ",
-  "ᛁ",
-  "ᛃ",
-  "ᛇ",
-  "ᛈ",
-  "ᛉ",
-  "ᛋ",
-  "ᛏ",
-  "ᛒ",
-  "ᛖ",
-  "ᛗ",
-  "ᛚ",
-  "ᛝ",
-  "ᛟ",
-  "ᛞ",
-] as const;
-
-export type Rune = typeof Futhark[number];
-export type RuneOrSum = Rune | "∑" | "=";
-
-export type Slot = { position: RuneOrSum; meaning: RuneOrSum };
-export type Chain = Slot[];
-
-export interface Spread {
-  id: string;
-  date: number;
-  title: string;
-  querent: string;
-  circle: Chain;
-  rx: Array<Rune>;
-  chainPins: Array<Rune>;
-  locked: boolean;
-  order: Record<string, Rune[]>;
-  readings: Record<string, Record<Rune, any>>;
-}
-
-export interface ThemeScheme {
-  name: string;
-  runes: Rune[];
-}
-
-export type Descriptions = Record<string, Record<Rune, any>>;
-
-// Keep it and all dependencies JSON-serializable,
-// no fancy stuff like Sets etc.
-export interface PersistentState {
-  version: number;
-  spreads: Record<string, Spread>;
-  descriptions: Descriptions;
-}
+// ---------------------------------------------------------------- Routing
 
 export enum Screen {
   Loading,
+  LoadError,
   SpreadsList,
   EditSpread,
 }
 
-export interface Loading {
-  screen: Screen.Loading;
+export type Route =
+  | { screen: Screen.Loading }
+  | { screen: Screen.LoadError; message: string }
+  | { screen: Screen.SpreadsList }
+  | { screen: Screen.EditSpread; spreadId: string };
+
+export const route = atom<Route>({ screen: Screen.Loading });
+
+export function navigate(to: Route) {
+  // Chain selection refers to the spread being left.
+  selectChain(undefined);
+  movingRune.value = undefined;
+  route.value = to;
 }
 
-export interface SpreadsList {
-  screen: Screen.SpreadsList;
-}
+// ---------------------------------------------------------------- Themes
 
-export interface EditSpread {
-  screen: Screen.EditSpread;
-  spreadId: string;
-}
+/** Themes are part of the app, not of the saved state. Texts are keyed by
+ *  theme name, so renaming a theme in themes.json orphans its texts. */
+export const themes = defaultThemes as ThemeScheme[];
+export const themeNames = themes.map((t) => t.name);
 
-export type Route = Loading | SpreadsList | EditSpread;
+// ---------------------------------------------------------------- Persistent state
 
-export interface Filters {
-  title: string;
-  fromDate: number | null;
-  toDate: number | null;
-  querent: string;
-  theme: string;
-  position: Rune | null;
-  meaning: Rune | null;
-}
+export type AtomicTexts = Record<string, Atom<ThemeTexts>>;
 
-export type AtomicDescriptions = Record<string, Atom<Record<Rune, any>>>;
-
+/** `Spread` with its frequently changing parts in their own atoms, so that
+ *  e.g. typing a reading doesn't recompute everything depending on the circle. */
 export interface AtomicSpread {
   id: string;
   date: number;
   title: string;
   querent: string;
   circle: Atom<Chain>;
-  rx: Atom<Array<Rune>>;
-  chainPins: Atom<Array<Rune>>;
+  rx: Atom<Rune[]>;
+  chainPins: Atom<Rune[]>;
   locked: boolean;
   order: Atom<Record<string, Rune[]>>;
-  readings: Atom<AtomicDescriptions>;
+  readings: Atom<AtomicTexts>;
 }
 
-export const route = atom<Route>({ screen: Screen.Loading });
+function atomizeTexts(texts: Record<string, ThemeTexts>): AtomicTexts {
+  return mapValues(texts, (x) => atom(x));
+}
+
+function atomizeSpread(spread: Spread): Atom<AtomicSpread> {
+  return atom<AtomicSpread>({
+    ...spread,
+    circle: atom(spread.circle),
+    rx: atom(spread.rx),
+    chainPins: atom(spread.chainPins),
+    order: atom(spread.order),
+    readings: atom(atomizeTexts(spread.readings)),
+  });
+}
 
 export const spreads = atom<Record<string, Atom<AtomicSpread>>>({});
-export const themes = atom<Atom<ThemeScheme>[]>(
-  defaultThemes.map((x) => atom(x)) as Atom<ThemeScheme>[]
-);
-export const descriptions = atom<AtomicDescriptions>({});
+export const descriptions = atom<AtomicTexts>({});
 
-export const themeNames = atom(() =>
-  themes.value.map((theme) => theme.value.name)
-);
-
-const persistentState: Atom<PersistentState> = atom<PersistentState>(() => {
-  return deatomize({
-    version: 1,
+const persistentState = atom<PersistentState>(() =>
+  deatomize({
+    version: persistentStateVersion,
     spreads,
     descriptions,
-  });
-});
-
-(async () => {
-  const initialState: PersistentState | void = JSON.parse(
-    await invoke("get_initial_state", {})
-  );
-  if (initialState) {
-    spreads.value = mapValues(initialState.spreads, (spread) =>
-      atom<AtomicSpread>({
-        ...spread,
-        circle: atom(spread.circle),
-        rx: atom(spread.rx),
-        chainPins: atom(spread.chainPins),
-        order: atom(spread.order),
-        readings: atom(mapValues(spread.readings, atom)),
-      } as AtomicSpread)
-    );
-    descriptions.value = mapValues(initialState.descriptions, (x) => atom(x));
-  }
-  route.value = { screen: Screen.SpreadsList };
-})();
-
-const savePersistentState = debounce(() => {
-  invoke("set_state", { data: JSON.stringify(persistentState.value) });
-}, 1000);
-
-globalSubscriptions.subscribe(savePersistentState);
-
-export const themeDescription = atomFamily(
-  (theme: string, position: Rune) => descriptions.value[theme]?.value[position]
+  })
 );
 
-export function setThemeDescription(theme: string, position: Rune, json: any) {
-  const t = descriptions.value[theme];
+let persistence: ReturnType<typeof startSaving> | undefined;
+
+(async () => {
+  try {
+    const json = await loadState();
+    if (json !== null) {
+      const state = parsePersistentState(json);
+      spreads.value = mapValues(state.spreads, atomizeSpread);
+      descriptions.value = atomizeTexts(state.descriptions);
+    }
+    persistence = startSaving(persistentState);
+    route.value = { screen: Screen.SpreadsList };
+  } catch (e) {
+    console.error("Loading failed", e);
+    route.value = {
+      screen: Screen.LoadError,
+      message: e instanceof Error ? e.message : String(e),
+    };
+  }
+})();
+
+onExit(async () => {
+  await persistence?.flush();
+});
+
+export function retrySave() {
+  return persistence?.retry();
+}
+
+// ---------------------------------------------------------------- Texts
+
+function setText(
+  texts: Atom<AtomicTexts>,
+  theme: string,
+  position: RuneOrSum,
+  doc: Doc
+) {
+  const t = texts.value[theme];
   if (t) {
-    t.swap((theme) => ({ ...theme, [position]: json }));
+    t.swap((t) => ({ ...t, [position]: doc }));
   } else {
-    descriptions.swap(
-      (readings) =>
-        ({
-          ...readings,
-          [theme]: atom({ [position]: json }),
-        } as AtomicDescriptions)
-    );
+    texts.swap((all) => ({ ...all, [theme]: atom({ [position]: doc }) }));
   }
 }
 
-export function createSpread(id: string) {
-  const spread = atom<AtomicSpread>({
-    id,
-    date: Date.now(),
-    title: "",
-    querent: "",
-    circle: atom([]),
-    rx: atom([]),
-    chainPins: atom([]),
-    locked: false,
-    order: atom({ AllRunes: [...Futhark] }),
-    readings: atom({}),
-  });
-  spreads.swap((spreads) => ({ ...spreads, [id]: spread }));
+export const themeDescription = atomFamily(
+  (theme: string, position: RuneOrSum) =>
+    descriptions.value[theme]?.value[position]
+);
+
+export function setThemeDescription(
+  theme: string,
+  position: RuneOrSum,
+  doc: Doc
+) {
+  setText(descriptions, theme, position, doc);
+}
+
+export const themeReading = atomFamily((theme: string, position: RuneOrSum) => {
+  return currentReadings.value?.value[theme]?.value[position];
+});
+
+export function setThemeReading(theme: string, position: RuneOrSum, doc: Doc) {
+  const readings = currentReadings.value;
+  if (readings) setText(readings, theme, position, doc);
+}
+
+// ---------------------------------------------------------------- Spreads
+
+export function createSpread(): string {
+  const id = nanoid();
+  spreads.swap((spreads) => ({
+    ...spreads,
+    [id]: atomizeSpread(newSpread(id)),
+  }));
+  return id;
 }
 
 export function deleteSpread(id: string) {
@@ -200,19 +186,21 @@ export function deleteSpread(id: string) {
 }
 
 export const querents = atom<Array<{ label: string }>>(() => {
-  return Array.from(
-    new Set(Object.values(spreads.value).map((s) => s.value.querent))
-  ).map((label) => ({ label }));
+  const names = new Set(
+    Object.values(spreads.value).map((s) => s.value.querent.trim())
+  );
+  names.delete("");
+  return Array.from(names)
+    .sort((a, b) => a.localeCompare(b))
+    .map((label) => ({ label }));
 });
 
-export const byChains = atom<boolean>(false);
-
-export const currentSpreadId = atom<string | void>(() => {
-  let r = route.value;
+export const currentSpreadId = atom<string | undefined>(() => {
+  const r = route.value;
   return r.screen === Screen.EditSpread ? r.spreadId : undefined;
 });
 
-export const currentSpread = atom<AtomicSpread | void>(() => {
+export const currentSpread = atom<AtomicSpread | undefined>(() => {
   const id = currentSpreadId.value;
   return id ? spreads.value[id]?.value : undefined;
 });
@@ -220,47 +208,27 @@ export const currentSpread = atom<AtomicSpread | void>(() => {
 export function updateCurrentSpread(f: (x: AtomicSpread) => AtomicSpread) {
   const id = currentSpreadId.value;
   if (!id) return;
-  const spread = spreads.value[id];
-  if (!spread) return;
-  spread.swap(f);
+  spreads.value[id]?.swap(f);
 }
 
 export const currentCircle = atom(() => currentSpread.value?.circle.value);
 
 export const currentReadings = atom(() => currentSpread.value?.readings);
 
-export const currentRX = atom(() => currentSpread.value?.rx);
+const currentRX = atom(() => currentSpread.value?.rx);
 
-export const currentChainPins = atom(() => currentSpread.value?.chainPins);
+const currentChainPins = atom(() => currentSpread.value?.chainPins);
 
-export const currentOrder = atom(() => currentSpread.value?.order);
+const currentOrder = atom(() => currentSpread.value?.order);
 
 export const currentSpreadLocked = atom(() => !!currentSpread.value?.locked);
 
-export const themeReading = atomFamily((theme: string, position: Rune) => {
-  const t = currentReadings.value?.value[theme];
-  return t && t.value[position];
-});
+// ---------------------------------------------------------------- Card order
 
-export function setThemeReading(theme: string, position: Rune, json: any) {
-  const t = currentReadings.value?.value[theme];
-  if (t) {
-    t.swap((theme) => ({ ...theme, [position]: json }));
-  } else {
-    currentReadings.value?.swap(
-      (readings) =>
-        ({
-          ...readings,
-          [theme]: atom({ [position]: json }),
-        } as AtomicDescriptions)
-    );
-  }
-}
-
-export const themeOrder = atomFamily((theme: string) => {
+export const themeOrder = atomFamily((theme: string): Rune[] => {
   return (
     currentOrder.value?.value[theme] ||
-    themes.value.find((t) => t.value.name === theme)?.value.runes ||
+    themes.find((t) => t.name === theme)?.runes ||
     []
   );
 });
@@ -269,7 +237,13 @@ export function setThemeOrder(theme: string, newOrder: Rune[]) {
   currentOrder.value?.swap((order) => ({ ...order, [theme]: newOrder }));
 }
 
-export const slotByPosition = atomFamily((position: Rune) =>
+export function resetOrder() {
+  currentOrder.value?.swap((order) => ({ ...order, [AllRunes]: [...Futhark] }));
+}
+
+// ---------------------------------------------------------------- Circle
+
+export const slotByPosition = atomFamily((position: RuneOrSum) =>
   currentCircle.value?.find((s) => s.position === position)
 );
 
@@ -277,47 +251,94 @@ export const slotByMeaning = atomFamily((meaning: Rune) =>
   currentCircle.value?.find((s) => s.meaning === meaning)
 );
 
-export function resetOrder() {
-  currentOrder.value?.swap((order) => ({ ...order, AllRunes: [...Futhark] }));
+export const isReversedByMeaning = atomFamily(
+  (meaning: Rune) => !!currentRX.value?.value.includes(meaning)
+);
+
+export const isReversedByPosition = atomFamily((position: RuneOrSum) => {
+  const meaning = slotByPosition(position).value?.meaning;
+  return !!meaning && isReversedByMeaning(meaning).value;
+});
+
+export function reverseRune(rune: Rune) {
+  if (currentSpreadLocked.value) return;
+  currentRX.value?.swap((rx) =>
+    rx.includes(rune) ? rx.filter((x) => x !== rune) : [...rx, rune]
+  );
 }
 
+/** Runes left outside the circle can't stay reversed. */
 export function straightenFreeRunes() {
   const runesInCircle = new Set(currentCircle.value?.map((s) => s.meaning));
   currentRX.value?.swap((rx) => rx.filter((rune) => runesInCircle.has(rune)));
 }
 
-export const currentChain = atom<number | void>(undefined);
-export const temporaryPin = atom<Rune | void>(undefined);
+export const canvasSize = atom<number>(600);
+export const movingRune = atom<Rune | undefined>(undefined);
+export const movingRuneCoords = atom<Point>([0, 0]);
 
-export const currentChains = atom(() => {
-  const result: Chain[] = [];
-  const visited = new Set<Rune>();
-  for (const rune of Futhark) {
-    let position = rune;
-    const chain = [];
-    while (!visited.has(position)) {
-      visited.add(position);
-      const slot = slotByPosition(position).value;
-      if (slot) {
-        const s = deatomize(slot);
-        chain.push(s);
-        position = s.meaning;
-      }
+/** Move the dragged rune to `p`, snapping it into a free slot when close. */
+export function snapMovingRune(p: Point) {
+  movingRuneCoords.value = p;
+  const circle = currentSpread.value?.circle;
+  const meaning = movingRune.value;
+  if (!circle || !meaning || currentSpreadLocked.value) return;
+  const [pp, n] = nearestPoint(p);
+  if (distance(p, pp) < meaningRuneSize) {
+    const position = Futhark[n];
+    if (!circle.value.some((x) => x.position === position)) {
+      circle.swap((circle) => [
+        ...circle.filter((x) => x.meaning !== meaning),
+        { position, meaning },
+      ]);
     }
-    if (chain.length > 0) {
-      result.push(chain);
-    }
+  } else if (circle.value.some((x) => x.meaning === meaning)) {
+    circle.swap((circle) => circle.filter((x) => x.meaning !== meaning));
   }
-  return result.sort((a, b) => b.length - a.length);
+}
+
+// ---------------------------------------------------------------- Chains
+
+export const byChains = atom<boolean>(false);
+
+export const currentChains = atom(() => chainsOf(currentCircle.value ?? []));
+
+/** The selected chain is remembered by one of its positions rather than by
+ *  index, so it survives (or cleanly disappears on) changes of the circle. */
+const selectedChainRune = atom<Rune | undefined>(undefined);
+
+/** Position the selected chain is temporarily displayed from. */
+const temporaryPin = atom<Rune | undefined>(undefined);
+
+export function selectChain(rune: Rune | undefined, pin?: Rune) {
+  selectedChainRune.value = rune;
+  temporaryPin.value = pin;
+}
+
+export function setTemporaryPin(pin: Rune) {
+  temporaryPin.value = pin;
+}
+
+export const pinnedChains = atom<Chain[]>(() => {
+  const chainPins = currentChainPins.value?.value ?? [];
+  const tempPin = temporaryPin.value;
+  return currentChains.value.map((chain) => {
+    const has = (rune: Rune | undefined) =>
+      !!rune && chain.some((s) => s.position === rune);
+    return pinChain(chain, has(tempPin) ? tempPin : chainPins.find(has));
+  });
 });
 
-export function pinCurrentChain(newPin: Rune) {
-  const chainIdx = currentChain.value;
-  if (typeof chainIdx === "undefined") return;
-  const spread = currentSpread.value;
-  if (!spread) return;
-  const allChains = currentChains.value;
-  const chain = allChains[chainIdx];
+export const selectedChain = atom<Chain | undefined>(() => {
+  const rune = selectedChainRune.value;
+  if (!rune) return undefined;
+  return pinnedChains.value.find((c) => c.some((s) => s.position === rune));
+});
+
+/** Make the selected chain always start from `newPin`. */
+export function pinSelectedChain(newPin: Rune) {
+  const chain = selectedChain.value;
+  if (!chain) return;
   const positions = new Set(chain.map((s) => s.position));
   currentChainPins.value?.swap((chainPins) => [
     ...chainPins.filter((rune) => !positions.has(rune)),
@@ -325,32 +346,10 @@ export function pinCurrentChain(newPin: Rune) {
   ]);
 }
 
-export const pinnedChains = atom<Chain[]>(() => {
-  const chainPins = currentChainPins.value?.value;
-  const allChains = currentChains.value;
-  const tempPin = temporaryPin.value;
-  const result = [];
-  for (const slots of allChains) {
-    const runes = slots.map((s) => s.position);
-    const positions = new Set(runes);
-    const pin =
-      (tempPin && positions.has(tempPin) && tempPin) ||
-      chainPins?.find((p) => positions.has(p)) ||
-      runes[0];
-    const offset = pin ? slots.findIndex((s) => s.position === pin) : 0;
-    const pinnedChain = [];
-    for (let i = offset; i < offset + slots.length; i++) {
-      pinnedChain.push(slots[i % slots.length]);
-    }
-    result.push(pinnedChain);
-  }
-  return result;
-});
-
-export const runeColors = atom<Record<Rune, string>>(() => {
+export const runeColors = atom<Partial<Record<RuneOrSum, string>>>(() => {
   const allChains = currentChains.value;
   const n = allChains.length;
-  const result = {} as Record<RuneOrSum, string>;
+  const result: Partial<Record<RuneOrSum, string>> = {};
   allChains.forEach((chain, i) => {
     const hue = Math.round((360 * i + 180) / n) % 360;
     const chainColor = `hsla(${hue},100%,50%,0.25)`;
@@ -362,38 +361,10 @@ export const runeColors = atom<Record<Rune, string>>(() => {
 });
 
 export const runeColor = atomFamily(
-  (position: Rune) => runeColors.value[position]
+  (position: RuneOrSum) => runeColors.value[position]
 );
 
-export const runeChains = atom<Record<Rune, number>>(() => {
-  const allChains = currentChains.value;
-  const result = {} as Record<Rune, number>;
-  allChains.forEach((chain, i) => {
-    for (const { position } of chain) {
-      result[position as Rune] = i;
-    }
-  });
-  return result;
-});
-
-export const isReversedByPosition = atomFamily((position: Rune) => {
-  const meaning = slotByPosition(position).value?.meaning;
-  const rxAtom = currentRX.value;
-  const rx = rxAtom && deatomize(rxAtom);
-  return !!(meaning && rx?.includes(meaning));
-});
-
-export const isReversedByMeaning = atomFamily((meaning: Rune) => {
-  const rxAtom = currentRX.value;
-  const rx = rxAtom && deatomize(rxAtom);
-  return !!rx?.includes(meaning);
-});
-
-export function reverseRune(rune: Rune) {
-  currentRX.value?.swap((rx) =>
-    rx.includes(rune) ? rx.filter((x) => x !== rune) : [...rx, rune]
-  );
-}
+// ---------------------------------------------------------------- Spreads list
 
 export const filters = atom<Filters>({
   title: "",
@@ -409,181 +380,14 @@ export const filteredSpreads = atom(() => {
   const f = filters.value;
   return Object.values(spreads.value)
     .map((s) => s.value)
-    .filter((s) => {
-      if (
-        f.title !== "" &&
-        !s.title.toLowerCase().includes(f.title.toLowerCase())
+    .filter((s) =>
+      spreadMatches(
+        { ...s, circle: s.circle.value },
+        (theme) => s.readings.value[theme]?.value,
+        f
       )
-        return false;
-      if (f.fromDate !== null && s.date < f.fromDate) return false;
-      if (f.toDate !== null && s.date > f.toDate) return false;
-      if (
-        f.querent !== "" &&
-        !s.querent.toLowerCase().includes(f.querent.toLowerCase())
-      )
-        return false;
-      if (
-        f.theme &&
-        !Object.values(s.readings.value[f.theme] || {}).some(
-          (x) => x && JSON.stringify(x) !== emptyDoc
-        )
-      )
-        return false;
-      if (f.position && f.meaning) {
-        return s.circle.value.some(
-          (x) => x.position === f.position && x.meaning === f.meaning
-        );
-      }
-      return true;
-    });
+    );
 });
-
-const emptyDoc = JSON.stringify({
-  type: "doc",
-  content: [{ type: "paragraph" }],
-});
-
-export const canvasSize = atom<number>(600);
-export const canvasFactor = 250.0;
-export const canvasCenter = [0.5 * canvasFactor, 0.5 * canvasFactor];
-export const canvasScale = atom<number>(() => canvasSize.value / canvasFactor);
-export const movingRune = atom<Rune | void>(undefined);
-export const movingRuneCoords = atom<Point>([0, 0]);
-
-function linearSpace(start: number, stop: number, n: number): number[] {
-  return Array.from({ length: n }).map(
-    (_, i) => start + (i * (stop - start)) / n
-  );
-}
-
-function polarToRect(r: number, a: number, cx = 0, cy = 0): Point {
-  return [r * Math.cos(a) + cx, r * Math.sin(a) + cy];
-}
-
-/** Build polygon with `n` vertices, `r` radius of described circle,
- *  center  at `cx, cy`, starting from `rot` angle. */
-function polygonPoints(n: number, r: number, rot = 0, cx = 0, cy = 0): Point[] {
-  return linearSpace(rot, rot + 2 * Math.PI, n).map((p) =>
-    polarToRect(r, p, cx, cy)
-  );
-}
-
-/** Returns coordinates of `k` vertex of polygon. */
-export function polygonPoint(
-  n: number,
-  r: number,
-  k: number,
-  rot = 0,
-  cx = 0,
-  cy = 0
-): Point {
-  const a = rot + (2 * k * Math.PI) / n;
-  return polarToRect(r, a, cx, cy);
-}
-
-/** Build star with given `n` vertices, `r1` inner and `r2` outer radii,
- *  center at `cx, cy`, starting from `rot` angle. */
-function makeStarPoints(
-  n: number,
-  r1: number,
-  r2: number,
-  rot = 0,
-  cx = 0,
-  cy = 0
-): Point[] {
-  const p1 = polygonPoints(n, r1, rot, cx, cy);
-  const p2 = polygonPoints(n, r2, rot + Math.PI / n, cx, cy);
-  return p1.flatMap((x, i) => [x, p2[i]]);
-}
-
-/** Returns `[coords number]` for nearest polygon vertex for given `x, y` point.
-  Polygon is described by `n, r, rot, cx, cy` */
-function nearestPolygonPoint(
-  n: number,
-  r: number,
-  [x, y]: Point,
-  rot = 0,
-  cx = 0,
-  cy = 0
-): [Point, number] {
-  const phi = Math.atan2(y - cy, x - cx);
-  const m1 = Math.round((phi * n) / (2 * Math.PI));
-  const m2 = Math.round(((phi + rot) * n) / (2 * Math.PI));
-  const a = (m1 * 2 * Math.PI) / n;
-  return [polarToRect(r, a, cx, cy), (m2 < 0 ? m2 + n : m2) % n];
-}
-
-export function pointsToStr(points: Point[]): string {
-  return points.map((coords) => coords.join(",")).join(" ");
-}
-
-const starOuterRadius = 100;
-const starInnerRadius = 95;
-const positionRuneRadius = 90;
-const meaningRuneOuterRadius = 110;
-const meaningRuneInnerRadius = 70;
-const meaningRuneSize = 16;
-// const positionRuneSize = 10;
-export const middleCircleRadius = 80;
-export const innerCircleRadius = 60;
-export const north = -0.5 * Math.PI;
-
-export const starPoints = pointsToStr(
-  makeStarPoints(Futhark.length, starOuterRadius, starInnerRadius)
-);
-
-export const positionsStar = polygonPoints(
-  Futhark.length,
-  positionRuneRadius,
-  north
-);
-
-export const meaningsOuterStar = polygonPoints(
-  Futhark.length,
-  meaningRuneOuterRadius,
-  north
-);
-
-export const meaningsInnerStar = polygonPoints(
-  Futhark.length,
-  meaningRuneInnerRadius,
-  north
-);
-
-function nearestPoint(p: Point): [Point, number] {
-  return nearestPolygonPoint(Futhark.length, meaningRuneInnerRadius, p, -north);
-}
-
-function distance(p1: Point, p2: Point): number {
-  const a = p1[0] - p2[0];
-  const b = p1[1] - p2[1];
-  return Math.sqrt(a * a + b * b);
-}
-
-export function snapMovingRune(p: Point) {
-  movingRuneCoords.value = p;
-  const circle = currentCircle.value;
-  const meaning = movingRune.value;
-  if (!circle || !meaning) return;
-  const [pp, n] = nearestPoint(p);
-  const isClose = distance(p, pp) < meaningRuneSize;
-  if (isClose) {
-    const position = Futhark[n];
-    const slot = circle.find((x) => x.position === position);
-    if (!slot) {
-      currentSpread.value?.circle.swap((circle) => [
-        ...circle.filter((x) => x.meaning !== meaning),
-        { position, meaning },
-      ]);
-    }
-  } else {
-    if (circle.find((x) => x.meaning === meaning)) {
-      currentSpread.value?.circle.swap((circle) =>
-        circle.filter((x) => x.meaning !== meaning)
-      );
-    }
-  }
-}
 
 export const spreadListSort = atom<GridSortModel>([
   { field: "date", sort: "desc" },

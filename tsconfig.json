@@ -3,7 +3,10 @@
     "outDir": "./dist",
     "module": "esnext",
     "target": "esnext",
-    "lib": ["esnext", "dom"],
+    "lib": [
+      "esnext",
+      "dom"
+    ],
     "alwaysStrict": true,
     "strict": true,
     "preserveConstEnums": true,
@@ -12,8 +15,15 @@
     "esModuleInterop": true,
     "isolatedModules": true,
     "resolveJsonModule": true,
-    "jsx": "react"
+    "jsx": "react",
+    "skipLibCheck": true,
+    "noEmit": true
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }

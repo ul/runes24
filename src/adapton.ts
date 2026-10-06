@@ -1,6 +1,7 @@
 export type Thunk<T> = () => T;
 
-let currentlyAdapting: Adapton<any>;
+/** The node whose thunk is running; nodes it forces become its dependencies. */
+let currentlyAdapting: Adapton<any> | undefined;
 
 export class Adapton<T> {
   // This is okay as we never use initial value due to `isClean = false`
@@ -31,7 +32,13 @@ export class Adapton<T> {
       this.removeDependency(sub);
     }
     this.isClean = true;
-    this.result = this.thunk();
+    try {
+      this.result = this.thunk();
+    } catch (e) {
+      this.isClean = false;
+      throw e;
+    }
+    // A dependency may have been changed while the thunk was running.
     return this.compute();
   }
 
@@ -46,8 +53,12 @@ export class Adapton<T> {
   force(): T {
     const prevAdapting = currentlyAdapting;
     currentlyAdapting = this;
-    const result = this.compute();
-    currentlyAdapting = prevAdapting;
+    let result: T;
+    try {
+      result = this.compute();
+    } finally {
+      currentlyAdapting = prevAdapting;
+    }
     currentlyAdapting?.addDependency(this);
     return result;
   }

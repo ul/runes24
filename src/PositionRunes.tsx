@@ -1,14 +1,7 @@
 import React from "react";
-import { useAtom } from "./atom";
-import {
-  currentChain,
-  currentChains,
-  Futhark,
-  Point,
-  positionsStar,
-  Rune,
-  temporaryPin,
-} from "./state";
+import { Futhark, Rune } from "./model";
+import { Point, positionsStar } from "./geometry";
+import { selectChain, slotByPosition } from "./state";
 
 function PositionRune({
   rune,
@@ -17,7 +10,6 @@ function PositionRune({
   rune: Rune;
   position: Point;
 }) {
-  const allChains = useAtom(currentChains);
   return (
     <text
       className="rune position-rune"
@@ -26,17 +18,7 @@ function PositionRune({
       textAnchor="middle"
       dominantBaseline="central"
       onClick={() => {
-        let i = 0;
-        for (const chain of allChains) {
-          for (const slot of chain) {
-            if (slot.position === rune) {
-              temporaryPin.reset(rune);
-              currentChain.reset(i);
-              return;
-            }
-          }
-          i++;
-        }
+        if (slotByPosition(rune).value) selectChain(rune, rune);
       }}
     >
       {rune}

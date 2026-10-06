@@ -6,6 +6,8 @@ import Stack from "@mui/material/Stack";
 import { TopNavigation } from "./TopNavigation";
 import { Router } from "./Router";
 import { Footer } from "./Footer";
+import { ErrorBoundary } from "./ErrorBoundary";
+import { SaveError } from "./SaveError";
 
 export function App() {
   return (
@@ -13,8 +15,11 @@ export function App() {
       <CssBaseline />
       <Stack flex={1}>
         <TopNavigation />
+        <SaveError />
         <Stack mt={1} flex={1}>
-          <Router />
+          <ErrorBoundary>
+            <Router />
+          </ErrorBoundary>
         </Stack>
         <Footer />
       </Stack>

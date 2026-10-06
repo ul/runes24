@@ -2,9 +2,9 @@ import React, { memo, useCallback } from "react";
 import { useAtom } from "./atom";
 import Stack from "@mui/material/Stack";
 import { TextEditor } from "./TextEditor";
+import { Doc, RuneOrSum, Sum } from "./model";
 import {
   themeReading,
-  RuneOrSum,
   themeDescription,
   setThemeDescription,
   setThemeReading,
@@ -20,16 +20,16 @@ export const PositionCard = memo(function PositionCard({
   const reading = useAtom(themeReading(theme, position));
   const desc = useAtom(themeDescription(theme, position));
   const updateDesc = useCallback(
-    (json: any) => setThemeDescription(theme, position, json),
+    (doc: Doc) => setThemeDescription(theme, position, doc),
     [theme, position]
   );
   const updateReading = useCallback(
-    (json: any) => setThemeReading(theme, position, json),
+    (doc: Doc) => setThemeReading(theme, position, doc),
     [theme, position]
   );
   return (
     <Stack flexGrow={1}>
-      {position !== "∑" ? (
+      {position !== Sum ? (
         <TextEditor
           className="text-editor-theme-description"
           content={desc}

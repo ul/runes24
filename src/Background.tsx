@@ -1,5 +1,5 @@
 import React from "react";
-import { starPoints, middleCircleRadius, innerCircleRadius } from "./state";
+import { starPoints, middleCircleRadius, innerCircleRadius } from "./geometry";
 
 export function Background() {
   return (

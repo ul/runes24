@@ -1,6 +1,5 @@
-import React, { memo, useMemo } from "react";
-import debounce from "lodash/debounce";
-import { Extension } from "@tiptap/core";
+import React, { memo } from "react";
+import { Editor, Extension } from "@tiptap/core";
 import { useEditor, BubbleMenu, EditorContent } from "@tiptap/react";
 import Bold from "@tiptap/extension-bold";
 import Color from "@tiptap/extension-color";
@@ -18,8 +17,9 @@ import FormatUnderlinedIcon from "@mui/icons-material/FormatUnderlined";
 import FormatColorTextIcon from "@mui/icons-material/FormatColorText";
 import FormatColorResetIcon from "@mui/icons-material/FormatColorReset";
 import Stack from "@mui/material/Stack";
+import { Doc } from "./model";
 
-function Menu({ editor }) {
+function Menu({ editor }: { editor: Editor }) {
   return (
     <BubbleMenu
       className="bubble-menu text-editor-toolbar"
@@ -126,17 +126,14 @@ export const TextEditor = memo(function TextEditor({
   onChange,
   className,
 }: {
-  content: any;
-  onChange: (json: any) => void;
+  content: Doc | undefined;
+  onChange: (doc: Doc) => void;
   className?: string;
 }) {
-  const onUpdate = useMemo(
-    () =>
-      debounce(({ editor }) => {
-        onChange(editor.state.doc.toJSON());
-      }, 250),
-    [onChange]
-  );
+  // `content` is only the initial value; afterwards the editor owns the text.
+  // Changes are reported on every keystroke (no debounce), so nothing typed
+  // is lost when the card unmounts or the app closes; saving to disk is
+  // debounced separately.
   const editor = useEditor({
     extensions: [
       Bold,
@@ -151,7 +148,7 @@ export const TextEditor = memo(function TextEditor({
       Underline,
     ],
     content,
-    onUpdate,
+    onUpdate: ({ editor }) => onChange(editor.getJSON() as Doc),
   });
 
   if (!editor) return null;

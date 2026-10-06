@@ -8,6 +8,7 @@ import Switch from "@mui/material/Switch";
 import Icon from "@mui/material/Icon";
 import LockOpenIcon from "@mui/icons-material/LockOpen";
 import LockIcon from "@mui/icons-material/Lock";
+import { Dayjs } from "dayjs";
 import { currentSpread, updateCurrentSpread, querents } from "./state";
 
 export function SpreadMeta() {
@@ -19,11 +20,10 @@ export function SpreadMeta() {
       <Autocomplete
         freeSolo
         options={allQuerents}
-        onChange={(_, value) =>
-          updateCurrentSpread((spread) => ({
-            ...spread,
-            querent: typeof value === "string" ? value : value?.label ?? "",
-          }))
+        // Save what is typed, not only what is picked from the list.
+        inputValue={spread.querent}
+        onInputChange={(_, value) =>
+          updateCurrentSpread((spread) => ({ ...spread, querent: value }))
         }
         value={allQuerents.find((x) => x.label === spread.querent) || null}
         sx={{ flex: 3, mr: 1 }}
@@ -48,12 +48,14 @@ export function SpreadMeta() {
         inputFormat="DD/MM/YY"
         mask="__/__/__"
         value={spread.date}
-        onChange={(date) =>
+        onChange={(date: Dayjs | null) => {
+          // Ignore incomplete or invalid input instead of storing NaN.
+          if (!date?.isValid()) return;
           updateCurrentSpread((spread) => ({
             ...spread,
-            date: date?.valueOf() ?? Date.now(),
-          }))
-        }
+            date: date.valueOf(),
+          }));
+        }}
         renderInput={(params) => (
           <TextField variant="standard" sx={{ flex: 2, mr: 1 }} {...params} />
         )}

@@ -1,9 +1,9 @@
 [package]
 name = "runes24"
 version = "1.0.0"
-description = "Runes 24"
+description = "Runes Circle"
 authors = [ "Ruslan Prakapchuk <fer.obbee@gmail.com>" ]
-license = "Apache-2.0 OR MIT"
+license = "MIT"
 edition = "2021"
 build = "src/build.rs"
 
@@ -14,8 +14,7 @@ tauri-build = { version = "1.0.0", features = [] }
 dirs = "4.0.0"
 serde = { version = "1.0.137", features = [ "derive" ] }
 snap = "1.0.5"
-tauri = { version = "1.0.0", features = ["api-all"] }
-# tauri = { git = "https://github.com/tauri-apps/tauri", branch = "next", features = ["api-all"] }
+tauri = { version = "1.0.0", features = [] }
 
 [features]
 default = [ "custom-protocol" ]

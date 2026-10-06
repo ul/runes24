@@ -1,5 +1,5 @@
 import memoize from "moize";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import { Adapton, AdaptonRef, Thunk } from "./adapton";
 
 class Subscriptions {
@@ -98,23 +98,10 @@ export function deatomize(object: any): any {
 }
 
 export function useAtom<T>(atom: Atom<T>): T {
-  // `useState` is leveraged to trigger component re-render by calling `setValue`
-  // with the new atom result.
-  const [value, setValue] = useState(() => atom.deref());
-  // `useMemo` is called during render top-down which helps to maintain the desired
-  // order of insertion in `subscriptions`.
-  const unsubscribe = useMemo(() => {
-    let previous = value;
-    const update = () => {
-      const value = atom.deref();
-      if (value !== previous) {
-        previous = value;
-        setValue(value);
-      }
-    };
-    return globalSubscriptions.subscribe(update);
-  }, [atom]);
-  // Clean up subscription.
-  useEffect(() => unsubscribe, [unsubscribe]);
-  return value;
+  // Every atom change notifies every subscriber; `useSyncExternalStore`
+  // re-renders only if `deref()` returns something different (by identity).
+  const getSnapshot = useCallback(() => atom.deref(), [atom]);
+  return useSyncExternalStore(subscribe, getSnapshot);
 }
+
+const subscribe = (f: () => void) => globalSubscriptions.subscribe(f);

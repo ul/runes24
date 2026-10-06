@@ -1,17 +1,17 @@
 import React, { Fragment, useCallback } from "react";
 import { useAtom } from "./atom";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from "react-beautiful-dnd";
 import Stack from "@mui/material/Stack";
 import { Token } from "./Token";
 import { PositionCard } from "./PositionCard";
-import { Rune, themeOrder, setThemeOrder } from "./state";
-
-function reorder<T>(list: T[], startIndex: number, endIndex: number): T[] {
-  const result = Array.from(list);
-  const [removed] = result.splice(startIndex, 1);
-  result.splice(endIndex, 0, removed);
-  return result;
-}
+import { reorder } from "./reorder";
+import { AllRunes, Rune, Sum } from "./model";
+import { themeOrder, setThemeOrder } from "./state";
 
 export function DraggablePositionCards({
   theme,
@@ -25,7 +25,7 @@ export function DraggablePositionCards({
   const order = useAtom(themeOrder(theme));
   const orderedRunes = runes || order;
   const onDragEnd = useCallback(
-    (result) => {
+    (result: DropResult) => {
       if (!result.destination) return;
       setThemeOrder(
         theme,
@@ -75,8 +75,8 @@ export function DraggablePositionCards({
       </DragDropContext>
       {noSum ? null : (
         <Stack direction="row" spacing={1}>
-          <Token position={"∑"} noColor />
-          <PositionCard position={"∑"} theme={theme} />
+          <Token position={Sum} noColor />
+          <PositionCard position={Sum} theme={theme} />
         </Stack>
       )}
     </Stack>

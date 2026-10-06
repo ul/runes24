@@ -1,5 +1,4 @@
 import React from "react";
-import { useAtom } from "./atom";
 import Box from "@mui/material/Box";
 import Tab from "@mui/material/Tab";
 import TabContext from "@mui/lab/TabContext";
@@ -8,13 +7,14 @@ import TabPanel from "@mui/lab/TabPanel";
 import Paper from "@mui/material/Paper";
 import { AllRunes } from "./AllRunes";
 import { Theme } from "./Theme";
+import { AllRunes as AllRunesTheme } from "./model";
 import { themeNames } from "./state";
 
 export function Reading() {
-  const [activeTab, setActiveTab] = React.useState("AllRunes");
-  const themes = useAtom(themeNames);
+  const [activeTab, setActiveTab] = React.useState(AllRunesTheme);
+  const themes = themeNames;
 
-  const handleChange = (_: Event, newValue: string) => {
+  const handleChange = (_: React.SyntheticEvent, newValue: string) => {
     setActiveTab(newValue);
   };
 
@@ -23,13 +23,13 @@ export function Reading() {
       <TabContext value={activeTab}>
         <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
           <TabList onChange={handleChange} aria-label="Reading themes">
-            <Tab label="All Runes" value="AllRunes" />
+            <Tab label="All Runes" value={AllRunesTheme} />
             {themes.map((name) => (
               <Tab key={name} label={name} value={name} />
             ))}
           </TabList>
         </Box>
-        <TabPanel value="AllRunes">
+        <TabPanel value={AllRunesTheme}>
           <AllRunes />
         </TabPanel>
         {themes.map((name) => (

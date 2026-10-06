@@ -1,6 +1,6 @@
 {
   "package": {
-    "productName": "Runes 24",
+    "productName": "Runes Circle",
     "version": "1.0.0"
   },
   "build": {
@@ -22,11 +22,11 @@
       ]
     },
     "allowlist": {
-      "all": true
+      "all": false
     },
     "windows": [
       {
-        "title": "Runes 24",
+        "title": "Runes Circle",
         "width": 800,
         "height": 600,
         "resizable": true,
@@ -35,7 +35,10 @@
       }
     ],
     "security": {
-      "csp": "default-src blob: data: filesystem: ws: wss: http: https: tauri: asset: customprotocol: 'unsafe-eval' 'unsafe-inline' 'self' img-src: 'self'"
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: asset:; font-src 'self' data:; connect-src 'self' ipc: ws://localhost:1234",
+      "dangerousDisableAssetCspModification": [
+        "style-src"
+      ]
     }
   }
 }

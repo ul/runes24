@@ -10,7 +10,11 @@
     "build": "parcel build",
     "tauri": "tauri",
     "dev": "tauri dev",
-    "bundle": "tauri build"
+    "bundle": "tauri build",
+    "typecheck": "tsc -p .",
+    "test": "node --test \"src/**/*.test.mjs\"",
+    "format": "prettier --write src",
+    "verify": "tsc -p . && node --test \"src/**/*.test.mjs\" && prettier --check src"
   },
   "dependencies": {
     "@emotion/react": "^11.7.1",
@@ -32,8 +36,6 @@
     "@tiptap/extension-text-style": "^2.0.0-beta.23",
     "@tiptap/extension-underline": "^2.0.0-beta.22",
     "@tiptap/react": "^2.0.0-beta.104",
-    "@types/lodash": "^4.14.178",
-    "@types/react-beautiful-dnd": "^13.1.2",
     "dayjs": "^1.10.7",
     "lodash": "^4.17.21",
     "moize": "^6.1.0",
@@ -44,11 +46,16 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "^1.0.0-beta.10",
+    "@types/lodash": "^4.14.178",
     "@types/react": "^18.0.14",
+    "@types/react-beautiful-dnd": "^13.1.2",
     "@types/react-dom": "^18.0.5",
     "parcel": "^2.0.1",
     "prettier": "^2.4.1",
     "process": "^0.11.10",
     "typescript": "^4.5.4"
+  },
+  "engines": {
+    "node": ">=23.6"
   }
 }

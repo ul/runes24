@@ -1,73 +1,70 @@
 import { useCallback, useRef } from "react";
-import { Atom } from "./atom";
-import { Point } from "./state";
+import { Point } from "./geometry";
 
-const _SVGElement = document.createElementNS(
-  "http://www.w3.org/2000/svg",
-  "svg"
-);
-const SVGPoint = _SVGElement.createSVGPoint();
-
-function getScreenPoint(node: SVGGraphicsElement): DOMPoint {
-  return SVGPoint.matrixTransform(node.getScreenCTM().inverse());
+export interface DragHandlers {
+  /** Return false to refuse the drag. */
+  start: () => boolean;
+  stop: () => void;
+  /** Pointer position in the coordinate system of the dragged node's parent. */
+  setXY: (p: Point) => void;
 }
 
 function isLeftButton(e: MouseEvent): boolean {
   return e.button === 0;
 }
 
-/** Project client{X,Y} to SVG node {x,y}. */
-function svgLocation(node: SVGGraphicsElement, [x, y]: Point): Point {
-  SVGPoint.x = x;
-  SVGPoint.y = y;
-  const p = getScreenPoint(node);
+/** Project client{X,Y} to the user space of `frame`. */
+function svgLocation(frame: SVGGraphicsElement, e: MouseEvent): Point | null {
+  const ctm = frame.getScreenCTM();
+  if (!ctm) return null;
+  const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(ctm.inverse());
   return [p.x, p.y];
 }
 
-function location(e: MouseEvent): Point {
-  return [e.clientX, e.clientY];
-}
-
+/** Make an SVG element draggable. Returns a callback ref for the element.
+ *  Coordinates are taken relative to the element's parent, so transforms on
+ *  the element itself (e.g. rotation of reversed runes) and whatever is under
+ *  the pointer during the drag don't matter. */
 export function useSVGDraggable(
-  {
-    start,
-    stop,
-    setXY,
-  }: { start: () => void; stop: () => void; setXY: (p: Point) => void },
-  deps
-): (newNode: any) => void {
-  const node = useRef(null);
-  const drag = useCallback(
-    (e: MouseEvent) => {
-      if (e.target) {
-        setXY(svgLocation(e.target as SVGGraphicsElement, location(e)));
-      }
-    },
-    [setXY]
-  );
-  const mouseUp = useCallback((e: MouseEvent) => {
-    if (isLeftButton(e)) {
-      window.removeEventListener("mousemove", drag);
-      window.removeEventListener("mouseup", mouseUp);
-      stop();
-    }
-  }, deps);
-  const mouseDown = useCallback((e: MouseEvent) => {
-    if (!isLeftButton(e)) return;
-    start();
-    drag(e);
-    window.addEventListener("mousemove", drag);
-    window.addEventListener("mouseup", mouseUp);
-  }, deps);
-  const ref = useCallback((newNode) => {
-    if (newNode === node.current) return;
-    if (node.current) {
-      node.current.removeEventListener("mousedown", mouseDown);
-    }
-    node.current = newNode;
-    if (node.current) {
-      node.current.addEventListener("mousedown", mouseDown);
-    }
-  }, deps);
-  return ref;
+  handlers: DragHandlers
+): (node: SVGGraphicsElement | null) => void {
+  const handlersRef = useRef(handlers);
+  handlersRef.current = handlers;
+  const cleanup = useRef<() => void>();
+
+  return useCallback((node: SVGGraphicsElement | null) => {
+    cleanup.current?.();
+    cleanup.current = undefined;
+    const frame = node?.parentNode;
+    if (!node || !(frame instanceof SVGGraphicsElement)) return;
+
+    let dragging = false;
+    const move = (e: MouseEvent) => {
+      const p = svgLocation(frame, e);
+      if (p) handlersRef.current.setXY(p);
+    };
+    const end = () => {
+      if (!dragging) return;
+      dragging = false;
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+      handlersRef.current.stop();
+    };
+    const up = (e: MouseEvent) => {
+      if (isLeftButton(e)) end();
+    };
+    const down = (e: MouseEvent) => {
+      if (!isLeftButton(e) || !handlersRef.current.start()) return;
+      dragging = true;
+      move(e);
+      window.addEventListener("mousemove", move);
+      window.addEventListener("mouseup", up);
+    };
+
+    node.addEventListener("mousedown", down);
+    cleanup.current = () => {
+      node.removeEventListener("mousedown", down);
+      end();
+    };
+  }, []);
 }

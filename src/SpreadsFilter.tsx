@@ -8,12 +8,17 @@ import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import TextField from "@mui/material/TextField";
 import Stack from "@mui/material/Stack";
-import { filters, Futhark, querents, Rune, themeNames } from "./state";
+import { Dayjs } from "dayjs";
+import { AllRunes, Futhark, Rune } from "./model";
+import { filters, querents, themeNames } from "./state";
+
+function dateOrNull(date: Dayjs | null): number | null {
+  return date?.isValid() ? date.valueOf() : null;
+}
 
 export function SpreadsFilter() {
   const f = useAtom(filters);
   const allQuerents = useAtom(querents);
-  const allThemes = useAtom(themeNames);
   return (
     <Stack direction="row" spacing={2}>
       <Autocomplete
@@ -42,8 +47,8 @@ export function SpreadsFilter() {
         inputFormat="DD/MM/YY"
         mask="__/__/__"
         value={f.fromDate}
-        onChange={(date) => {
-          filters.reset({ ...f, fromDate: date?.valueOf() ?? null });
+        onChange={(date: Dayjs | null) => {
+          filters.reset({ ...f, fromDate: dateOrNull(date) });
         }}
         renderInput={(params) => (
           <TextField variant="standard" sx={{ flex: 2 }} {...params} />
@@ -54,8 +59,8 @@ export function SpreadsFilter() {
         inputFormat="DD/MM/YY"
         mask="__/__/__"
         value={f.toDate}
-        onChange={(date) => {
-          filters.reset({ ...f, toDate: date?.valueOf() ?? null });
+        onChange={(date: Dayjs | null) => {
+          filters.reset({ ...f, toDate: dateOrNull(date) });
         }}
         renderInput={(params) => (
           <TextField variant="standard" sx={{ flex: 2 }} {...params} />
@@ -72,8 +77,8 @@ export function SpreadsFilter() {
           }}
         >
           <MenuItem value="">None</MenuItem>
-          <MenuItem value="AllRunes">All Runes</MenuItem>
-          {allThemes.map((name) => (
+          <MenuItem value={AllRunes}>All Runes</MenuItem>
+          {themeNames.map((name) => (
             <MenuItem key={name} value={name}>
               {name}
             </MenuItem>
@@ -87,7 +92,10 @@ export function SpreadsFilter() {
           labelId="position-select-label"
           label="Position"
           onChange={(e) => {
-            filters.reset({ ...f, position: e.target.value as Rune | null });
+            filters.reset({
+              ...f,
+              position: (e.target.value || null) as Rune | null,
+            });
           }}
         >
           <MenuItem value="">None</MenuItem>
@@ -105,7 +113,10 @@ export function SpreadsFilter() {
           labelId="meaning-select-label"
           label="Meaning"
           onChange={(e) => {
-            filters.reset({ ...f, meaning: e.target.value as Rune | null });
+            filters.reset({
+              ...f,
+              meaning: (e.target.value || null) as Rune | null,
+            });
           }}
         >
           <MenuItem value="">None</MenuItem>

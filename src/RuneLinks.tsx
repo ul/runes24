@@ -1,14 +1,13 @@
 import React, { memo } from "react";
 import { useAtom } from "./atom";
+import { Futhark, Rune } from "./model";
 import {
-  currentCircle,
-  Futhark,
   innerCircleRadius,
   north,
   pointsToStr,
   polygonPoint,
-  Rune,
-} from "./state";
+} from "./geometry";
+import { currentCircle } from "./state";
 
 const pp = (k: number, rot: number) =>
   polygonPoint(Futhark.length, innerCircleRadius, k, rot);

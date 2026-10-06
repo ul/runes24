@@ -9,7 +9,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogActions from "@mui/material/DialogActions";
-import { currentSpreadId, route, Screen, deleteSpread } from "./state";
+import { currentSpreadId, navigate, Screen, deleteSpread } from "./state";
 
 export function DeleteSpread() {
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
@@ -50,7 +50,7 @@ export function DeleteSpread() {
             color="secondary"
             onClick={() => {
               setDeleteConfirmationOpen(false);
-              route.reset({ screen: Screen.SpreadsList });
+              navigate({ screen: Screen.SpreadsList });
               deleteSpread(spreadId);
             }}
             autoFocus

@@ -1,12 +1,8 @@
 import React, { memo } from "react";
-import { atom, useAtom } from "./atom";
+import { useAtom } from "./atom";
 import Paper from "@mui/material/Paper";
-import {
-  runeColor,
-  slotByPosition,
-  isReversedByPosition,
-  RuneOrSum,
-} from "./state";
+import { RuneOrSum } from "./model";
+import { runeColor, slotByPosition, isReversedByPosition } from "./state";
 
 export const Token = memo(function Token({
   onClick,

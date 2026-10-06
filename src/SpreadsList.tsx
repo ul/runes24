@@ -2,7 +2,7 @@ import React from "react";
 import { SpreadsFilter } from "./SpreadsFilter";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import { useAtom } from "./atom";
-import { filteredSpreads, route, Screen, spreadListSort } from "./state";
+import { filteredSpreads, navigate, Screen, spreadListSort } from "./state";
 import dayjs from "dayjs";
 import Stack from "@mui/material/Stack";
 
@@ -39,7 +39,7 @@ export function SpreadsList() {
         sortModel={sortModel}
         onSortModelChange={(newModel) => spreadListSort.reset(newModel)}
         onRowClick={({ id }) => {
-          route.reset({ screen: Screen.EditSpread, spreadId: id as string });
+          navigate({ screen: Screen.EditSpread, spreadId: id as string });
         }}
       />
     </Stack>

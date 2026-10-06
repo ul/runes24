@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      - run: yarn verify
+      - run: yarn build
+
+  backend:
+    # Tauri 1 needs WebKitGTK 4.0 on Linux, which current Ubuntu no longer ships.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+      - run: yarn install --frozen-lockfile
+      # `tauri::generate_context!` embeds ../dist at compile time.
+      - run: yarn build
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - working-directory: src-tauri
+        run: cargo fmt --check && cargo clippy --locked -- -D warnings

@@ -6,21 +6,23 @@ import IconButton from "@mui/material/IconButton";
 import AddIcon from "@mui/icons-material/Add";
 import ListIcon from "@mui/icons-material/List";
 import { useAtom } from "./atom";
-import { Screen, route, createSpread } from "./state";
-import { nanoid } from "nanoid";
+import { Screen, route, createSpread, navigate } from "./state";
 
 export function TopNavigation() {
   const currentRoute = useAtom(route);
+  const ready =
+    currentRoute.screen === Screen.SpreadsList ||
+    currentRoute.screen === Screen.EditSpread;
   return (
     <AppBar position="static">
       <Toolbar variant="dense">
         <IconButton
           color="inherit"
           sx={{ mr: 2 }}
+          disabled={!ready}
           onClick={() => {
-            const id = nanoid();
-            createSpread(id);
-            route.reset({ screen: Screen.EditSpread, spreadId: id });
+            const id = createSpread();
+            navigate({ screen: Screen.EditSpread, spreadId: id });
           }}
         >
           <AddIcon />
@@ -34,12 +36,10 @@ export function TopNavigation() {
         >
           Runes Circle
         </Typography>
-        {currentRoute.screen !== Screen.SpreadsList ? (
+        {currentRoute.screen === Screen.EditSpread ? (
           <IconButton
             color="inherit"
-            onClick={() => {
-              route.reset({ screen: Screen.SpreadsList });
-            }}
+            onClick={() => navigate({ screen: Screen.SpreadsList })}
           >
             <ListIcon />
           </IconButton>

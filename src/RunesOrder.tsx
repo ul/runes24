@@ -1,19 +1,22 @@
 import React, { useCallback } from "react";
 import { useAtom } from "./atom";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from "react-beautiful-dnd";
 import Stack from "@mui/material/Stack";
 import { Token } from "./Token";
-import { Rune, setThemeOrder, themeOrder } from "./state";
+import { reorder } from "./reorder";
+import { AllRunes, Rune } from "./model";
+import { setThemeOrder, themeOrder } from "./state";
 
-function reorder<T>(list: T[], startIndex: number, endIndex: number): T[] {
-  const result = Array.from(list);
-  const [removed] = result.splice(startIndex, 1);
-  result.splice(endIndex, 0, removed);
-  return result;
-}
+// aligned-rbd supports "grid"; @types/react-beautiful-dnd doesn't know it.
+const gridDirection = "grid" as "horizontal";
 
 export function RunesOrder({
-  theme = "AllRunes",
+  theme = AllRunes,
   runes,
   onClick,
 }: {
@@ -24,7 +27,7 @@ export function RunesOrder({
   const order = useAtom(themeOrder(theme));
   const orderedRunes = runes || order;
   const onDragEnd = useCallback(
-    (result) => {
+    (result: DropResult) => {
       if (!result.destination) return;
       setThemeOrder(
         theme,
@@ -35,7 +38,7 @@ export function RunesOrder({
   );
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <Droppable droppableId="RuneOrder" direction="grid">
+      <Droppable droppableId="RuneOrder" direction={gridDirection}>
         {(provided) => (
           <Stack
             {...provided.droppableProps}

@@ -1,15 +1,14 @@
 import React from "react";
-import { useAtom } from "./atom";
 import Stack from "@mui/material/Stack";
 import Divider from "@mui/material/Divider";
 import Button from "@mui/material/Button";
 import { RunesOrder } from "./RunesOrder";
 import { DraggablePositionCards } from "./DraggablePositionCards";
 import { ChainsSwitch } from "./ChainsSwitch";
-import { currentChain, resetOrder, Rune, runeChains } from "./state";
+import { AllRunes, Rune } from "./model";
+import { resetOrder, selectChain, slotByPosition } from "./state";
 
 export function FutharkOrder() {
-  const runeToChain = useAtom(runeChains);
   return (
     <Stack>
       <Stack
@@ -22,13 +21,14 @@ export function FutharkOrder() {
         <Button onClick={() => resetOrder()}>Reset</Button>
       </Stack>
       <RunesOrder
-        theme="AllRunes"
+        theme={AllRunes}
         onClick={(rune: Rune) => {
-          currentChain.reset(runeToChain[rune]);
+          // Every placed position belongs to a chain.
+          if (slotByPosition(rune).value) selectChain(rune);
         }}
       />
       <Divider orientation="horizontal" flexItem sx={{ mt: 2, mb: 1 }} />
-      <DraggablePositionCards theme="AllRunes" />
+      <DraggablePositionCards theme={AllRunes} />
     </Stack>
   );
 }

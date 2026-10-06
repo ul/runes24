@@ -1,11 +1,12 @@
-import React from "react";
+import React, { Fragment } from "react";
 import { useAtom } from "./atom";
 import Stack from "@mui/material/Stack";
 import Divider from "@mui/material/Divider";
 import { RunesOrder } from "./RunesOrder";
 import { DraggablePositionCards } from "./DraggablePositionCards";
 import { ChainsSwitch } from "./ChainsSwitch";
-import { currentChain, pinnedChains } from "./state";
+import { AllRunes } from "./model";
+import { pinnedChains, selectChain } from "./state";
 
 export function Chains() {
   const allChains = useAtom(pinnedChains);
@@ -20,23 +21,18 @@ export function Chains() {
       >
         <ChainsSwitch />
       </Stack>
-      {runeGroups.map((runes, i) => (
+      {runeGroups.map((runes) => (
         <RunesOrder
-          key={i}
+          key={runes[0]}
           runes={runes}
-          onClick={() => currentChain.reset(i)}
+          onClick={() => selectChain(runes[0])}
         />
       ))}
-      {runeGroups.map((group, i) => (
-        <>
+      {runeGroups.map((runes) => (
+        <Fragment key={runes[0]}>
           <Divider orientation="horizontal" flexItem sx={{ mt: 2, mb: 1 }} />
-          <DraggablePositionCards
-            key={i}
-            theme="AllRunes"
-            runes={group}
-            noSum
-          />
-        </>
+          <DraggablePositionCards theme={AllRunes} runes={runes} noSum />
+        </Fragment>
       ))}
     </Stack>
   );

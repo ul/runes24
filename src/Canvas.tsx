@@ -5,11 +5,12 @@ import { Background } from "./Background";
 import { PositionRunes } from "./PositionRunes";
 import { RuneLinks } from "./RuneLinks";
 import { MeaningRunes } from "./MeaningRunes";
-import { canvasSize, canvasCenter, canvasScale } from "./state";
+import { canvasCenter, canvasFactor } from "./geometry";
+import { canvasSize } from "./state";
 
 export function Canvas() {
   const size = useAtom(canvasSize);
-  const scale = useAtom(canvasScale);
+  const scale = size / canvasFactor;
   const [cx, cy] = canvasCenter;
   return (
     <Stack alignItems="center">

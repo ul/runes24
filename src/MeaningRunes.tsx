@@ -1,16 +1,14 @@
 import React from "react";
-import { atom, useAtom } from "./atom";
+import { useAtom } from "./atom";
 import { useSVGDraggable } from "./SVGDraggable";
+import { Futhark, Rune } from "./model";
+import { meaningsOuterStar, meaningsInnerStar } from "./geometry";
 import {
-  Futhark,
-  meaningsOuterStar,
-  meaningsInnerStar,
   movingRune,
   movingRuneCoords,
   reverseRune,
   snapMovingRune,
   straightenFreeRunes,
-  Rune,
   currentSpreadLocked,
   slotByMeaning,
   isReversedByMeaning,
@@ -21,26 +19,22 @@ function norm(x: number): number {
 }
 
 function MeaningRune({ rune, index }: { rune: Rune; index: number }) {
-  const isLocked = useAtom(currentSpreadLocked);
   const slotValue = useAtom(slotByMeaning(rune));
   const isRX = useAtom(isReversedByMeaning(rune));
   const movingRuneValue = useAtom(movingRune);
   const movingRuneXY = useAtom(movingRuneCoords);
-  const ref = useSVGDraggable(
-    {
-      start: () => {
-        if (isLocked) return;
-        movingRune.reset(rune);
-      },
-      stop: () => {
-        if (isLocked) return;
-        movingRune.reset(undefined);
-        straightenFreeRunes();
-      },
-      setXY: snapMovingRune,
+  const ref = useSVGDraggable({
+    start: () => {
+      if (currentSpreadLocked.value) return false;
+      movingRune.reset(rune);
+      return true;
     },
-    [isLocked]
-  );
+    stop: () => {
+      movingRune.reset(undefined);
+      straightenFreeRunes();
+    },
+    setXY: snapMovingRune,
+  });
   const isMoving = movingRuneValue === rune;
   const [x, y] = slotValue
     ? meaningsInnerStar[Futhark.indexOf(slotValue.position)]
@@ -60,7 +54,7 @@ function MeaningRune({ rune, index }: { rune: Rune; index: number }) {
       }
       onDoubleClick={(e) => {
         e.preventDefault();
-        if (isLocked || !slotValue) return;
+        if (!slotValue) return;
         reverseRune(rune);
       }}
     >
