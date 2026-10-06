@@ -12,10 +12,10 @@ export function FutharkOrder() {
   return (
     <Stack>
       <Stack
+        sx={{ mb: 1 }}
         direction="row"
         spacing={1}
         divider={<Divider orientation="vertical" flexItem />}
-        mb={1}
       >
         <ChainsSwitch />
         <Button onClick={() => resetOrder()}>Reset</Button>

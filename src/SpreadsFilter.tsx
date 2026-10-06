@@ -1,20 +1,15 @@
 import React from "react";
 import { useAtom } from "./atom";
 import Autocomplete from "@mui/material/Autocomplete";
-import DatePicker from "@mui/lab/DatePicker";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import TextField from "@mui/material/TextField";
 import Stack from "@mui/material/Stack";
-import { Dayjs } from "dayjs";
 import { AllRunes, Futhark, Rune } from "./model";
+import { DateInput } from "./DateInput";
 import { filters, querents, themeNames } from "./state";
-
-function dateOrNull(date: Dayjs | null): number | null {
-  return date?.isValid() ? date.valueOf() : null;
-}
 
 export function SpreadsFilter() {
   const f = useAtom(filters);
@@ -26,7 +21,7 @@ export function SpreadsFilter() {
         onChange={(_, value) => {
           filters.reset({
             ...f,
-            querent: typeof value === "string" ? value : value?.label ?? "",
+            querent: typeof value === "string" ? value : (value?.label ?? ""),
           });
         }}
         value={allQuerents.find((x) => x.label === f.querent) || null}
@@ -42,29 +37,17 @@ export function SpreadsFilter() {
         value={f.title}
         onChange={(e) => filters.reset({ ...f, title: e.target.value })}
       />
-      <DatePicker
+      <DateInput
         label="From"
-        inputFormat="DD/MM/YY"
-        mask="__/__/__"
         value={f.fromDate}
-        onChange={(date: Dayjs | null) => {
-          filters.reset({ ...f, fromDate: dateOrNull(date) });
-        }}
-        renderInput={(params) => (
-          <TextField variant="standard" sx={{ flex: 2 }} {...params} />
-        )}
+        onChange={(date) => filters.reset({ ...f, fromDate: date })}
+        sx={{ flex: 2 }}
       />
-      <DatePicker
+      <DateInput
         label="To"
-        inputFormat="DD/MM/YY"
-        mask="__/__/__"
         value={f.toDate}
-        onChange={(date: Dayjs | null) => {
-          filters.reset({ ...f, toDate: dateOrNull(date) });
-        }}
-        renderInput={(params) => (
-          <TextField variant="standard" sx={{ flex: 2 }} {...params} />
-        )}
+        onChange={(date) => filters.reset({ ...f, toDate: date })}
+        sx={{ flex: 2 }}
       />
       <FormControl variant="standard" sx={{ flex: 2 }}>
         <InputLabel id="theme-select-label">Theme</InputLabel>

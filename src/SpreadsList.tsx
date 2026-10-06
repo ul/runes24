@@ -20,9 +20,11 @@ const columns: GridColDef[] = [
   {
     field: "date",
     headerName: "Date",
-    type: "date",
+    type: "number",
+    align: "left",
+    headerAlign: "left",
     width: 110,
-    valueFormatter: ({ value }) => dayjs(value as number).format("DD/MM/YY"),
+    valueFormatter: (value: number) => dayjs(value).format("DD/MM/YY"),
   },
 ];
 
@@ -30,7 +32,7 @@ export function SpreadsList() {
   const rows = useAtom(filteredSpreads);
   const sortModel = useAtom(spreadListSort);
   return (
-    <Stack spacing={1} flex={1} p={1}>
+    <Stack sx={{ flex: 1, p: 1 }} spacing={1}>
       <SpreadsFilter />
       <DataGrid
         rows={rows}

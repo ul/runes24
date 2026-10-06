@@ -1,15 +1,15 @@
 import React, { memo } from "react";
 import { Editor, Extension } from "@tiptap/core";
-import { useEditor, BubbleMenu, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import { BubbleMenu } from "@tiptap/react/menus";
 import Bold from "@tiptap/extension-bold";
-import Color from "@tiptap/extension-color";
 import Document from "@tiptap/extension-document";
-import History from "@tiptap/extension-history";
 import Italic from "@tiptap/extension-italic";
 import Paragraph from "@tiptap/extension-paragraph";
 import Text from "@tiptap/extension-text";
-import TextStyle from "@tiptap/extension-text-style";
+import { Color, TextStyle } from "@tiptap/extension-text-style";
 import Underline from "@tiptap/extension-underline";
+import { UndoRedo } from "@tiptap/extensions";
 import IconButton from "@mui/material/IconButton";
 import FormatBoldIcon from "@mui/icons-material/FormatBold";
 import FormatItalicIcon from "@mui/icons-material/FormatItalic";
@@ -21,11 +21,7 @@ import { Doc } from "./model";
 
 function Menu({ editor }: { editor: Editor }) {
   return (
-    <BubbleMenu
-      className="bubble-menu text-editor-toolbar"
-      tippyOptions={{ duration: 100 }}
-      editor={editor}
-    >
+    <BubbleMenu className="bubble-menu text-editor-toolbar" editor={editor}>
       <Stack direction="row" sx={{ p: 0.25 }}>
         <IconButton
           key="bold"
@@ -103,20 +99,21 @@ function Menu({ editor }: { editor: Editor }) {
   );
 }
 
-const Clipboard = Extension.create({
-  name: "Shortcuts",
+/** Shift-Alt-Mod-V pastes clipboard text without formatting. */
+const PlainTextPaste = Extension.create({
+  name: "PlainTextPaste",
   addKeyboardShortcuts() {
     return {
-      "Mod-c": () => document.execCommand("copy"),
       "Shift-Alt-Mod-v": () => {
-        (async () => {
-          const text = await navigator.clipboard.readText();
-          this.editor.commands.insertContent(text);
-        })();
+        navigator.clipboard
+          .readText()
+          // As text: insertContent would parse HTML in it.
+          .then((text) => {
+            const { view, state } = this.editor;
+            view.dispatch(state.tr.insertText(text));
+          });
         return true;
       },
-      "Mod-v": () => document.execCommand("paste"),
-      "Mod-x": () => document.execCommand("cut"),
     };
   },
 });
@@ -137,10 +134,10 @@ export const TextEditor = memo(function TextEditor({
   const editor = useEditor({
     extensions: [
       Bold,
-      Clipboard,
+      PlainTextPaste,
       Color,
       Document,
-      History,
+      UndoRedo,
       Italic,
       Paragraph,
       Text,

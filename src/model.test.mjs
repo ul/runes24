@@ -49,11 +49,11 @@ test("docHasText ignores empty and whitespace-only documents", () => {
   assert.equal(docHasText({ type: "doc", content: [p(), p()] }), false);
   assert.equal(
     docHasText({ type: "doc", content: [p({ type: "text", text: "  " })] }),
-    false
+    false,
   );
   assert.equal(
     docHasText({ type: "doc", content: [p(), p({ type: "text", text: "x" })] }),
-    true
+    true,
   );
 });
 
@@ -94,7 +94,7 @@ test("parsePersistentState fills missing fields and drops junk", () => {
       spreads: {
         a: { title: "t", circle: [slot(F, U), { position: "x" }], rx: [U, 1] },
       },
-    })
+    }),
   );
   const a = state.spreads.a;
   assert.equal(a.id, "a");
@@ -110,6 +110,6 @@ test("parsePersistentState refuses what it can't understand", () => {
   assert.throws(() => parsePersistentState("[]"));
   assert.throws(
     () => parsePersistentState('{"version": 2}'),
-    UnsupportedVersionError
+    UnsupportedVersionError,
   );
 });

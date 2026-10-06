@@ -100,7 +100,7 @@ const persistentState = atom<PersistentState>(() =>
     version: persistentStateVersion,
     spreads,
     descriptions,
-  })
+  }),
 );
 
 let persistence: ReturnType<typeof startSaving> | undefined;
@@ -138,7 +138,7 @@ function setText(
   texts: Atom<AtomicTexts>,
   theme: string,
   position: RuneOrSum,
-  doc: Doc
+  doc: Doc,
 ) {
   const t = texts.value[theme];
   if (t) {
@@ -150,13 +150,13 @@ function setText(
 
 export const themeDescription = atomFamily(
   (theme: string, position: RuneOrSum) =>
-    descriptions.value[theme]?.value[position]
+    descriptions.value[theme]?.value[position],
 );
 
 export function setThemeDescription(
   theme: string,
   position: RuneOrSum,
-  doc: Doc
+  doc: Doc,
 ) {
   setText(descriptions, theme, position, doc);
 }
@@ -187,7 +187,7 @@ export function deleteSpread(id: string) {
 
 export const querents = atom<Array<{ label: string }>>(() => {
   const names = new Set(
-    Object.values(spreads.value).map((s) => s.value.querent.trim())
+    Object.values(spreads.value).map((s) => s.value.querent.trim()),
   );
   names.delete("");
   return Array.from(names)
@@ -244,15 +244,15 @@ export function resetOrder() {
 // ---------------------------------------------------------------- Circle
 
 export const slotByPosition = atomFamily((position: RuneOrSum) =>
-  currentCircle.value?.find((s) => s.position === position)
+  currentCircle.value?.find((s) => s.position === position),
 );
 
 export const slotByMeaning = atomFamily((meaning: Rune) =>
-  currentCircle.value?.find((s) => s.meaning === meaning)
+  currentCircle.value?.find((s) => s.meaning === meaning),
 );
 
 export const isReversedByMeaning = atomFamily(
-  (meaning: Rune) => !!currentRX.value?.value.includes(meaning)
+  (meaning: Rune) => !!currentRX.value?.value.includes(meaning),
 );
 
 export const isReversedByPosition = atomFamily((position: RuneOrSum) => {
@@ -263,7 +263,7 @@ export const isReversedByPosition = atomFamily((position: RuneOrSum) => {
 export function reverseRune(rune: Rune) {
   if (currentSpreadLocked.value) return;
   currentRX.value?.swap((rx) =>
-    rx.includes(rune) ? rx.filter((x) => x !== rune) : [...rx, rune]
+    rx.includes(rune) ? rx.filter((x) => x !== rune) : [...rx, rune],
   );
 }
 
@@ -361,7 +361,7 @@ export const runeColors = atom<Partial<Record<RuneOrSum, string>>>(() => {
 });
 
 export const runeColor = atomFamily(
-  (position: RuneOrSum) => runeColors.value[position]
+  (position: RuneOrSum) => runeColors.value[position],
 );
 
 // ---------------------------------------------------------------- Spreads list
@@ -384,8 +384,8 @@ export const filteredSpreads = atom(() => {
       spreadMatches(
         { ...s, circle: s.circle.value },
         (theme) => s.readings.value[theme]?.value,
-        f
-      )
+        f,
+      ),
     );
 });
 

@@ -26,11 +26,11 @@ function svgLocation(frame: SVGGraphicsElement, e: MouseEvent): Point | null {
  *  the element itself (e.g. rotation of reversed runes) and whatever is under
  *  the pointer during the drag don't matter. */
 export function useSVGDraggable(
-  handlers: DragHandlers
+  handlers: DragHandlers,
 ): (node: SVGGraphicsElement | null) => void {
   const handlersRef = useRef(handlers);
   handlersRef.current = handlers;
-  const cleanup = useRef<() => void>();
+  const cleanup = useRef<(() => void) | undefined>(undefined);
 
   return useCallback((node: SVGGraphicsElement | null) => {
     cleanup.current?.();

@@ -10,7 +10,7 @@ export const canvasCenter: Point = [0.5 * canvasFactor, 0.5 * canvasFactor];
 
 function linearSpace(start: number, stop: number, n: number): number[] {
   return Array.from({ length: n }).map(
-    (_, i) => start + (i * (stop - start)) / n
+    (_, i) => start + (i * (stop - start)) / n,
   );
 }
 
@@ -22,7 +22,7 @@ function polarToRect(r: number, a: number, cx = 0, cy = 0): Point {
  *  center  at `cx, cy`, starting from `rot` angle. */
 function polygonPoints(n: number, r: number, rot = 0, cx = 0, cy = 0): Point[] {
   return linearSpace(rot, rot + 2 * Math.PI, n).map((p) =>
-    polarToRect(r, p, cx, cy)
+    polarToRect(r, p, cx, cy),
   );
 }
 
@@ -33,7 +33,7 @@ export function polygonPoint(
   k: number,
   rot = 0,
   cx = 0,
-  cy = 0
+  cy = 0,
 ): Point {
   const a = rot + (2 * k * Math.PI) / n;
   return polarToRect(r, a, cx, cy);
@@ -47,7 +47,7 @@ function makeStarPoints(
   r2: number,
   rot = 0,
   cx = 0,
-  cy = 0
+  cy = 0,
 ): Point[] {
   const p1 = polygonPoints(n, r1, rot, cx, cy);
   const p2 = polygonPoints(n, r2, rot + Math.PI / n, cx, cy);
@@ -62,7 +62,7 @@ function nearestPolygonPoint(
   [x, y]: Point,
   rot = 0,
   cx = 0,
-  cy = 0
+  cy = 0,
 ): [Point, number] {
   const phi = Math.atan2(y - cy, x - cx);
   const m1 = Math.round((phi * n) / (2 * Math.PI));
@@ -86,25 +86,25 @@ export const innerCircleRadius = 60;
 export const north = -0.5 * Math.PI;
 
 export const starPoints = pointsToStr(
-  makeStarPoints(Futhark.length, starOuterRadius, starInnerRadius)
+  makeStarPoints(Futhark.length, starOuterRadius, starInnerRadius),
 );
 
 export const positionsStar = polygonPoints(
   Futhark.length,
   positionRuneRadius,
-  north
+  north,
 );
 
 export const meaningsOuterStar = polygonPoints(
   Futhark.length,
   meaningRuneOuterRadius,
-  north
+  north,
 );
 
 export const meaningsInnerStar = polygonPoints(
   Futhark.length,
   meaningRuneInnerRadius,
-  north
+  north,
 );
 
 /** Nearest meaning slot to `p`: its coordinates and Futhark index. */

@@ -17,7 +17,7 @@ export function DeleteSpread() {
   if (!spreadId) return null;
   return (
     <>
-      <Stack direction="row" justifyContent="center">
+      <Stack sx={{ justifyContent: "center" }} direction="row">
         <IconButton
           color="primary"
           onClick={() => setDeleteConfirmationOpen(true)}

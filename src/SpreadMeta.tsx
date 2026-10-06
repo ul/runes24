@@ -1,14 +1,13 @@
 import React from "react";
 import { useAtom } from "./atom";
 import TextField from "@mui/material/TextField";
-import DatePicker from "@mui/lab/DatePicker";
 import Autocomplete from "@mui/material/Autocomplete";
 import Stack from "@mui/material/Stack";
 import Switch from "@mui/material/Switch";
 import Icon from "@mui/material/Icon";
 import LockOpenIcon from "@mui/icons-material/LockOpen";
 import LockIcon from "@mui/icons-material/Lock";
-import { Dayjs } from "dayjs";
+import { DateInput } from "./DateInput";
 import { currentSpread, updateCurrentSpread, querents } from "./state";
 
 export function SpreadMeta() {
@@ -16,7 +15,7 @@ export function SpreadMeta() {
   const allQuerents = useAtom(querents);
   if (!spread) return null;
   return (
-    <Stack direction="row" spacing={2} alignItems="center">
+    <Stack sx={{ alignItems: "center" }} direction="row" spacing={2}>
       <Autocomplete
         freeSolo
         options={allQuerents}
@@ -43,22 +42,15 @@ export function SpreadMeta() {
           }))
         }
       />
-      <DatePicker
+      <DateInput
         label="Date"
-        inputFormat="DD/MM/YY"
-        mask="__/__/__"
         value={spread.date}
-        onChange={(date: Dayjs | null) => {
-          // Ignore incomplete or invalid input instead of storing NaN.
-          if (!date?.isValid()) return;
-          updateCurrentSpread((spread) => ({
-            ...spread,
-            date: date.valueOf(),
-          }));
+        onChange={(date) => {
+          // Keep the old date while the input is incomplete or invalid.
+          if (date === null) return;
+          updateCurrentSpread((spread) => ({ ...spread, date }));
         }}
-        renderInput={(params) => (
-          <TextField variant="standard" sx={{ flex: 2, mr: 1 }} {...params} />
-        )}
+        sx={{ flex: 2, mr: 1 }}
       />
       <Switch
         checked={spread.locked}

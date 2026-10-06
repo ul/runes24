@@ -5,7 +5,7 @@
 // `yarn start`) it falls back to `localStorage`.
 
 import debounce from "lodash/debounce";
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { atom, Atom, globalSubscriptions } from "./atom";
 import { PersistentState } from "./model";
@@ -42,8 +42,7 @@ const browserBackend: Backend = {
   },
 };
 
-const backend: Backend =
-  "__TAURI_IPC__" in window ? tauriBackend : browserBackend;
+const backend: Backend = isTauri() ? tauriBackend : browserBackend;
 
 /** Last save failure, shown to the user until a save succeeds. */
 export const saveError = atom<string | null>(null);
@@ -83,7 +82,7 @@ export function startSaving(snapshot: Atom<PersistentState>) {
           console.error("Saving failed", e);
           if (lastQueued === state) lastQueued = undefined;
           saveError.value = errorMessage(e);
-        }
+        },
       );
     return queue;
   };

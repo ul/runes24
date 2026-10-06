@@ -1,9 +1,7 @@
 import React from "react";
 import Box from "@mui/material/Box";
 import Tab from "@mui/material/Tab";
-import TabContext from "@mui/lab/TabContext";
-import TabList from "@mui/lab/TabList";
-import TabPanel from "@mui/lab/TabPanel";
+import Tabs from "@mui/material/Tabs";
 import Paper from "@mui/material/Paper";
 import { AllRunes } from "./AllRunes";
 import { Theme } from "./Theme";
@@ -20,24 +18,26 @@ export function Reading() {
 
   return (
     <Paper>
-      <TabContext value={activeTab}>
-        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-          <TabList onChange={handleChange} aria-label="Reading themes">
-            <Tab label="All Runes" value={AllRunesTheme} />
-            {themes.map((name) => (
-              <Tab key={name} label={name} value={name} />
-            ))}
-          </TabList>
-        </Box>
-        <TabPanel value={AllRunesTheme}>
+      <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+        <Tabs
+          value={activeTab}
+          onChange={handleChange}
+          variant="scrollable"
+          aria-label="Reading themes"
+        >
+          <Tab label="All Runes" value={AllRunesTheme} />
+          {themes.map((name) => (
+            <Tab key={name} label={name} value={name} />
+          ))}
+        </Tabs>
+      </Box>
+      <Box sx={{ p: 3 }} role="tabpanel">
+        {activeTab === AllRunesTheme ? (
           <AllRunes />
-        </TabPanel>
-        {themes.map((name) => (
-          <TabPanel key={name} value={name}>
-            <Theme theme={name} />
-          </TabPanel>
-        ))}
-      </TabContext>
+        ) : (
+          <Theme key={activeTab} theme={activeTab} />
+        )}
+      </Box>
     </Paper>
   );
 }

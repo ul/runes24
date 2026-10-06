@@ -39,8 +39,8 @@ function MeaningRune({ rune, index }: { rune: Rune; index: number }) {
   const [x, y] = slotValue
     ? meaningsInnerStar[Futhark.indexOf(slotValue.position)]
     : isMoving
-    ? movingRuneXY
-    : meaningsOuterStar[index];
+      ? movingRuneXY
+      : meaningsOuterStar[index];
   return (
     <text
       ref={ref}

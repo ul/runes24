@@ -8,17 +8,12 @@ edition = "2021"
 build = "src/build.rs"
 
 [build-dependencies]
-tauri-build = { version = "1.0.0", features = [] }
+tauri-build = { version = "2", features = [] }
 
 [dependencies]
-dirs = "4.0.0"
-serde = { version = "1.0.137", features = [ "derive" ] }
-snap = "1.0.5"
-tauri = { version = "1.0.0", features = [] }
-
-[features]
-default = [ "custom-protocol" ]
-custom-protocol = [ "tauri/custom-protocol" ]
+dirs = "6"
+snap = "1.1"
+tauri = { version = "2", features = [] }
 
 [profile.release]
 panic = "abort"

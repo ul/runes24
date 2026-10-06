@@ -24,7 +24,8 @@ state as well when doing that.
 ## Layout
 
 ```
-src-tauri/src/main.rs   Rust: load and save the state file, flush on close
+src-tauri/src/main.rs   Rust: load and save the state file, save before quitting, macOS menu
+src-tauri/capabilities  Tauri permissions of the webview
 src/
   model.ts              domain types and pure logic: chains, filters, parsing saved state
   geometry.ts           SVG geometry of the circle
@@ -32,7 +33,9 @@ src/
   atom.ts               atoms on top of adapton + the useAtom React hook
   persistence.ts        storage backends (Tauri file / localStorage), save queue
   state.ts              app state as atoms, and the actions changing it
-  *.tsx                 React components (MUI)
+  SortableRunes.tsx     drag-to-reorder lists of runes (dnd-kit)
+  SVGDraggable.tsx      dragging runes on the circle
+  *.tsx                 other React components (MUI)
   model.test.mjs        unit tests for model.ts
 ```
 
@@ -78,16 +81,19 @@ too, but is not saved.
    they reach the disk in order.
 4. In Rust, `set_state` writes a temporary file, syncs it, copies the old file
    to `.bak` and renames the new one into place.
-5. When the window close button is pressed, Rust cancels the close and emits
-   `close-requested`. The frontend flushes the pending save and calls
-   `exit_app`. If that hasn't happened within 5 s, or the button is pressed
-   again, Rust quits anyway.
+5. On quit (window close button, the app menu's Quit / Cmd+Q, or the app
+   exiting otherwise), Rust cancels it and emits `close-requested`. The
+   frontend flushes pending saves and calls `exit_app`. If that hasn't
+   happened within 5 s, or quit is requested again, Rust quits anyway.
+   macOS gets its own app menu because Tauri's default Quit item terminates
+   the app without a cancellable event.
 
 Bump `persistentStateVersion` and extend `parsePersistentState` when the
 saved format changes incompatibly.
 
 ## Security
 
-The Tauri allowlist is empty: the webview can only call the app's own three
-commands. The CSP allows only bundled scripts, styles, fonts and images.
+The only capability (`src-tauri/capabilities/default.json`) lets the webview
+listen to events; app commands are allowed by default, so it can call
+nothing but the app's own three commands. The CSP allows only bundled scripts, styles, fonts and images.
 Inline styles are allowed because Emotion (MUI) injects them.

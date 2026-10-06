@@ -21,14 +21,14 @@ export const PositionCard = memo(function PositionCard({
   const desc = useAtom(themeDescription(theme, position));
   const updateDesc = useCallback(
     (doc: Doc) => setThemeDescription(theme, position, doc),
-    [theme, position]
+    [theme, position],
   );
   const updateReading = useCallback(
     (doc: Doc) => setThemeReading(theme, position, doc),
-    [theme, position]
+    [theme, position],
   );
   return (
-    <Stack flexGrow={1}>
+    <Stack sx={{ flexGrow: 1 }}>
       {position !== Sum ? (
         <TextEditor
           className="text-editor-theme-description"

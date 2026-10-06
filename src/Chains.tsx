@@ -14,10 +14,10 @@ export function Chains() {
   return (
     <Stack>
       <Stack
+        sx={{ mb: 1 }}
         direction="row"
         spacing={1}
         divider={<Divider orientation="vertical" flexItem />}
-        mb={1}
       >
         <ChainsSwitch />
       </Stack>

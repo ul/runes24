@@ -1,4 +1,3 @@
-import memoize from "moize";
 import { useCallback, useSyncExternalStore } from "react";
 import { Adapton, AdaptonRef, Thunk } from "./adapton";
 
@@ -73,11 +72,20 @@ export function atom<T>(thunkOrValue: Thunk<T> | T): Atom<T> {
   return new Atom(thunkOrValue) as Atom<T>;
 }
 
-export function atomFamily<A extends any[], T>(
+/** One derived atom per distinct argument list, created on first use. */
+export function atomFamily<A extends string[], T>(
   f: (...args: A) => T,
-  memoizeOptions = { maxSize: 0x1000 }
 ): (...args: A) => Atom<T> {
-  return memoize((...args: A) => atom(() => f(...args)), memoizeOptions);
+  const cache = new Map<string, Atom<T>>();
+  return (...args: A) => {
+    const key = args.join("\u0000");
+    let a = cache.get(key);
+    if (!a) {
+      a = atom(() => f(...args));
+      cache.set(key, a);
+    }
+    return a;
+  };
 }
 
 export function deatomize(object: any): any {

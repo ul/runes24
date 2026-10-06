@@ -1,7 +1,8 @@
 @font-face {
   font-family: "futhark";
   src: url("./font/futhark.eot");
-  src: url("./font/futhark.eot?#iefix") format("embedded-opentype"),
+  src:
+    url("./font/futhark.eot?#iefix") format("embedded-opentype"),
     url("./font/futhark.ttf") format("truetype"),
     url("./font/futhark.svg#futhark") format("svg"),
     url("./font/futhark.woff") format("woff");

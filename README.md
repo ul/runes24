@@ -1,7 +1,7 @@
 # Runes Circle
 
 A desktop app for laying out and journaling Elder Futhark rune spreads on a
-24-position circle. Built with [Tauri 1](https://tauri.app) (Rust) and React.
+24-position circle. Built with [Tauri 2](https://tauri.app) (Rust) and React.
 
 For each spread you place the 24 runes onto the 24 positions of the circle,
 optionally reverse some of them, and write readings: per rune, per theme
@@ -21,12 +21,14 @@ code is put together.
   reading. Turn on **Chains** to group the cards by chain, or click a rune to
   open its chain.
 - Rich text: select text for bold, italic, underline and colours.
+  Shift-Alt-Cmd-V (Shift-Alt-Ctrl-V elsewhere) pastes without formatting.
 
 ## Your data
 
 Everything is saved to `~/.runes24/state.json.snap` (JSON, compressed with
 [Snappy framing](https://github.com/google/snappy/blob/main/framing_format.txt)),
-about a second after each change and again when the window closes.
+about a second after each change and again when the app quits or its
+window closes.
 
 - Saves go to a temporary file first, which then replaces the old one, so a
   crash can't leave a half-written file.
@@ -40,8 +42,8 @@ with any Snappy tool, e.g. `snzip -d -t framing2`.
 ## Development
 
 Prerequisites: [Node](https://nodejs.org) ≥ 23.6 with Yarn 1, a Rust
-toolchain, and the [Tauri 1 system
-dependencies](https://v1.tauri.app/v1/guides/getting-started/prerequisites).
+toolchain, and the [Tauri 2 system
+dependencies](https://tauri.app/start/prerequisites/).
 
 ```bash
 yarn install

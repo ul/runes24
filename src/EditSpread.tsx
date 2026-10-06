@@ -8,7 +8,7 @@ import { CanvasSize } from "./CanvasSize";
 
 export function EditSpread() {
   return (
-    <Stack spacing={1} p={2}>
+    <Stack sx={{ p: 2 }} spacing={1}>
       <SpreadMeta />
       <CanvasSize />
       <Canvas />

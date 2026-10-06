@@ -1,7 +1,7 @@
 import React from "react";
 import CssBaseline from "@mui/material/CssBaseline";
-import DateAdapter from "@mui/lab/AdapterDayjs";
-import LocalizationProvider from "@mui/lab/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import Stack from "@mui/material/Stack";
 import { TopNavigation } from "./TopNavigation";
 import { Router } from "./Router";
@@ -11,12 +11,12 @@ import { SaveError } from "./SaveError";
 
 export function App() {
   return (
-    <LocalizationProvider dateAdapter={DateAdapter}>
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
       <CssBaseline />
-      <Stack flex={1}>
+      <Stack sx={{ flex: 1 }}>
         <TopNavigation />
         <SaveError />
-        <Stack mt={1} flex={1}>
+        <Stack sx={{ flex: 1, mt: 1 }}>
           <ErrorBoundary>
             <Router />
           </ErrorBoundary>

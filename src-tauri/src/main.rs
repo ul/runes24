@@ -14,7 +14,7 @@ use std::{
     thread,
     time::Duration,
 };
-use tauri::{AppHandle, Manager, WindowEvent};
+use tauri::{AppHandle, Emitter, Manager, RunEvent, WindowEvent};
 
 const STATE_FILE: &str = "state.json.snap";
 const BACKUP_FILE: &str = "state.json.snap.bak";
@@ -25,7 +25,10 @@ const CLOSE_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// Serializes writes so concurrent `set_state` calls can't interleave.
 static WRITE_LOCK: Mutex<()> = Mutex::new(());
+/// Set once quitting has started, so a second request quits right away.
 static CLOSING: AtomicBool = AtomicBool::new(false);
+/// Set when the app may really exit.
+static EXIT_ALLOWED: AtomicBool = AtomicBool::new(false);
 
 fn state_dir() -> Result<PathBuf, String> {
     let mut dir = dirs::home_dir().ok_or("Can't find the home directory.")?;
@@ -75,39 +78,99 @@ fn set_state(data: String) -> Result<(), String> {
     write().map_err(|e| format!("Can't save {}: {}", path.display(), e))
 }
 
-/// Called by the frontend once pending changes are saved after `close-requested`.
-#[tauri::command]
-fn exit_app(app: AppHandle) {
+fn force_exit(app: &AppHandle) {
+    EXIT_ALLOWED.store(true, Ordering::SeqCst);
     app.exit(0);
 }
 
+/// Ask the frontend to save pending changes; it answers with `exit_app`.
+/// A second request, or a frontend that never answers, still quits.
+fn begin_quit(app: &AppHandle) {
+    if CLOSING.swap(true, Ordering::SeqCst) || app.emit("close-requested", ()).is_err() {
+        force_exit(app);
+        return;
+    }
+    let app = app.clone();
+    thread::spawn(move || {
+        thread::sleep(CLOSE_TIMEOUT);
+        force_exit(&app);
+    });
+}
+
+/// Called by the frontend once pending changes are saved after `close-requested`.
+#[tauri::command]
+fn exit_app(app: AppHandle) {
+    force_exit(&app);
+}
+
+const QUIT_MENU_ID: &str = "quit";
+
+/// Replaces Tauri's default macOS menu, whose Quit terminates the app
+/// without giving the frontend a chance to save. Edit items make the native
+/// clipboard shortcuts work in the webview.
+#[cfg(target_os = "macos")]
+fn app_menu(app: &AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::Wry>> {
+    use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder};
+    let quit = MenuItemBuilder::with_id(QUIT_MENU_ID, "Quit Runes Circle")
+        .accelerator("CmdOrCtrl+Q")
+        .build(app)?;
+    let app_submenu = SubmenuBuilder::new(app, "Runes Circle")
+        .about(None)
+        .separator()
+        .hide()
+        .hide_others()
+        .show_all()
+        .separator()
+        .item(&quit)
+        .build()?;
+    // No Undo/Redo items: their shortcuts must reach the editor's own history.
+    let edit = SubmenuBuilder::new(app, "Edit")
+        .cut()
+        .copy()
+        .paste()
+        .select_all()
+        .build()?;
+    let window = SubmenuBuilder::new(app, "Window")
+        .minimize()
+        .fullscreen()
+        .separator()
+        .close_window()
+        .build()?;
+    MenuBuilder::new(app)
+        .items(&[&app_submenu, &edit, &window])
+        .build()
+}
+
 fn main() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default();
+    #[cfg(target_os = "macos")]
+    let builder = builder.menu(app_menu);
+    builder
         .invoke_handler(tauri::generate_handler![
             get_initial_state,
             set_state,
             exit_app
         ])
-        .on_window_event(|event| {
-            if let WindowEvent::CloseRequested { api, .. } = event.event() {
-                api.prevent_close();
-                // A second close click, or a frontend that never answers,
-                // must still be able to quit.
-                if CLOSING.swap(true, Ordering::SeqCst) {
-                    event.window().app_handle().exit(0);
-                    return;
-                }
-                let app = event.window().app_handle();
-                if event.window().emit("close-requested", ()).is_err() {
-                    app.exit(0);
-                    return;
-                }
-                thread::spawn(move || {
-                    thread::sleep(CLOSE_TIMEOUT);
-                    app.exit(0);
-                });
+        .on_menu_event(|app, event| {
+            if event.id() == QUIT_MENU_ID {
+                begin_quit(app);
             }
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .on_window_event(|window, event| {
+            if let WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                begin_quit(window.app_handle());
+            }
+        })
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            // E.g. all windows closed by other means.
+            if let RunEvent::ExitRequested { api, .. } = event {
+                if !EXIT_ALLOWED.load(Ordering::SeqCst) {
+                    api.prevent_exit();
+                    begin_quit(app);
+                }
+            }
+        });
 }

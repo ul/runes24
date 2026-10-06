@@ -13,7 +13,7 @@ export function Canvas() {
   const scale = size / canvasFactor;
   const [cx, cy] = canvasCenter;
   return (
-    <Stack alignItems="center">
+    <Stack sx={{ alignItems: "center" }}>
       <svg
         xmlns="http://www.w3.org/2000/svg"
         style={{ width: size, height: size }}

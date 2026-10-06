@@ -29,7 +29,7 @@ export const Futhark = [
   "ᛞ",
 ] as const;
 
-export type Rune = typeof Futhark[number];
+export type Rune = (typeof Futhark)[number];
 
 /** "∑" is the summary card of a theme; it is never placed on the circle. */
 export const Sum = "∑";
@@ -130,7 +130,7 @@ function normalizeSpread(id: string, raw: unknown): Spread {
     querent: typeof s.querent === "string" ? s.querent : "",
     circle: Array.isArray(s.circle)
       ? s.circle.filter(
-          (x: any) => isObject(x) && isRune(x.position) && isRune(x.meaning)
+          (x: any) => isObject(x) && isRune(x.position) && isRune(x.meaning),
         )
       : [],
     rx: runes(s.rx),
@@ -138,7 +138,7 @@ function normalizeSpread(id: string, raw: unknown): Spread {
     locked: !!s.locked,
     order: isObject(s.order)
       ? Object.fromEntries(
-          Object.entries(s.order).map(([k, v]) => [k, runes(v)])
+          Object.entries(s.order).map(([k, v]) => [k, runes(v)]),
         )
       : base.order,
     readings: texts(s.readings),
@@ -155,14 +155,14 @@ export function parsePersistentState(json: string): PersistentState {
   const version = raw.version ?? 1;
   if (version > persistentStateVersion) {
     throw new UnsupportedVersionError(
-      `State file version ${version} is newer than this app supports (${persistentStateVersion}).`
+      `State file version ${version} is newer than this app supports (${persistentStateVersion}).`,
     );
   }
   const spreads = isObject(raw.spreads) ? raw.spreads : {};
   return {
     version: persistentStateVersion,
     spreads: Object.fromEntries(
-      Object.entries(spreads).map(([id, s]) => [id, normalizeSpread(id, s)])
+      Object.entries(spreads).map(([id, s]) => [id, normalizeSpread(id, s)]),
     ),
     descriptions: texts(raw.descriptions),
   };
@@ -237,7 +237,7 @@ function includesText(haystack: string, needle: string): boolean {
 export function spreadMatches(
   s: Pick<Spread, "title" | "querent" | "date" | "circle">,
   readings: (theme: string) => ThemeTexts | undefined,
-  f: Filters
+  f: Filters,
 ): boolean {
   if (!includesText(s.title, f.title)) return false;
   if (!includesText(s.querent, f.querent)) return false;
@@ -255,7 +255,7 @@ export function spreadMatches(
     return s.circle.some(
       (x) =>
         (!f.position || x.position === f.position) &&
-        (!f.meaning || x.meaning === f.meaning)
+        (!f.meaning || x.meaning === f.meaning),
     );
   }
   return true;

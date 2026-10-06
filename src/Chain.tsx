@@ -12,10 +12,10 @@ export function Chain({ chain }: { chain: ChainT }) {
   return (
     <Stack>
       <Stack
+        sx={{ mb: 1 }}
         direction="row"
         spacing={1}
         divider={<Divider orientation="vertical" flexItem />}
-        mb={1}
       >
         <Button onClick={() => selectChain(undefined)}>← All</Button>
         <Button onClick={() => pinSelectedChain(runes[0])}>Pin</Button>
